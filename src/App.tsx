@@ -63,6 +63,7 @@ export default function App() {
     Target | null | undefined
   >();
   const [revealPreview, setRevealPreview] = useState(false);
+  const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [checks, setChecks] = useState<Checks | null>(null);
   const [toast, setToast] = useState("");
@@ -235,7 +236,7 @@ export default function App() {
     }
   }
   const close = () => {
-    if (!busy) {
+    if (!busy && !previewLoading) {
       setView(null);
       setError("");
     }
@@ -1207,6 +1208,7 @@ export default function App() {
                 className="primary"
                 disabled={
                   busy ||
+                  previewLoading ||
                   !!preview.errors.length ||
                   !preview.changes.length ||
                   preview.changes.some((c) => c.conflict)
@@ -1235,10 +1237,11 @@ export default function App() {
             <input
               type="checkbox"
               checked={revealPreview}
-              disabled={busy}
+              disabled={busy || previewLoading}
               onChange={async (e) => {
                 const value = e.target.checked;
-                setBusy(true);
+                setPreviewLoading(true);
+                setError("");
                 try {
                   setPreview(
                     await request<Preview>("preview", { reveal: value }),
@@ -1247,7 +1250,7 @@ export default function App() {
                 } catch (e) {
                   setError(String(e));
                 } finally {
-                  setBusy(false);
+                  setPreviewLoading(false);
                 }
               }}
             />
@@ -1291,7 +1294,7 @@ export default function App() {
                     {c.message}
                   </p>
                   <button
-                    disabled={busy}
+                    disabled={busy || previewLoading}
                     onClick={() =>
                       perform(
                         "resolve",
@@ -1307,7 +1310,7 @@ export default function App() {
                     采用磁盘版本
                   </button>
                   <button
-                    disabled={busy}
+                    disabled={busy || previewLoading}
                     onClick={() =>
                       perform(
                         "resolve",
