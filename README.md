@@ -84,6 +84,16 @@ cp .local-dev/macos-icons/icon.icns src-tauri/icons/icon.icns
 CARGO_HOME="$PWD/.local-dev/cargo-home" npm test
 ```
 
+## 真实配置验证
+
+运行 `npm run validate:local`，使用当前用户的工具配置，验证发现、纳入管理、文本导入和同步预览。也可运行 `npm run validate:local -- --home /absolute/fixture-home` 验证指定样例目录。
+
+验证工作区临时建立在项目的 `.local-dev/` 下，结束后删除。检测前后比较原配置内容指纹；仅在临时服务库里编辑一条配置以检查更新差异，不执行应用、恢复、服务启动或网络请求。报告只输出工具名称、数量和检查结果，不包含配置内容、服务名称、地址或凭据。
+
+`invariantsPassed` 表示导入、预览和源文件保护的检查通过，不表示所有配置均受支持或服务可连接。请同时查看 `read-or-parse-error`、`unsupported`、`textImport` 和 `editPreview`。`sourceUnchanged: null` 表示文件无法读取，未验证内容一致性；预期的字段限制会记录为 `blocked-unsupported-cwd`。
+
+本次实机结果见 [真实配置验证记录](docs/REAL_DATA_VALIDATION.md)。
+
 ## 结构
 
 | 位置 | 职责 |
