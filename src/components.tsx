@@ -1,18 +1,27 @@
 import { useEffect, useRef, type ReactNode } from "react";
 import { X, Layers } from "lucide-react";
-const icons: Record<string, string> = {
-  codex: "codex.png",
-  claude: "claude.png",
-  cursor: "cursor.png",
-  gemini: "gemini.png",
-  opencode: "opencode.png",
-  copilot: "copilot.svg",
-  vscode: "vscode.png",
-  windsurf: "windsurf.svg",
-  kiro: "kiro.svg",
-  cline: "cline.png",
-  roo: "roo.png",
-  "claude-desktop": "claude-desktop.png",
+type ToolIconAsset = {
+  file: string;
+  crop?: { canvas: number; inset: number; size: number };
+};
+const claudeIcon: ToolIconAsset = {
+  file: "claude-desktop.png",
+  crop: { canvas: 128, inset: 13, size: 102 },
+};
+// App-bundle artwork includes Dock padding; frame the visible tile, not its canvas.
+const icons: Record<string, ToolIconAsset> = {
+  codex: { file: "codex.png", crop: { canvas: 1024, inset: 100, size: 824 } },
+  claude: claudeIcon,
+  cursor: { file: "cursor.png", crop: { canvas: 128, inset: 14, size: 100 } },
+  gemini: { file: "gemini.png" },
+  opencode: { file: "opencode.png" },
+  copilot: { file: "copilot.svg" },
+  vscode: { file: "vscode.png", crop: { canvas: 128, inset: 13, size: 102 } },
+  windsurf: { file: "windsurf.svg" },
+  kiro: { file: "kiro.svg" },
+  cline: { file: "cline.png" },
+  roo: { file: "roo.png" },
+  "claude-desktop": claudeIcon,
 };
 export function ToolIcon({
   id,
@@ -22,10 +31,19 @@ export function ToolIcon({
   small?: boolean;
 }) {
   const icon = icons[id];
+  const src = icon && `/tool-icons/${icon.file}`;
   return (
     <span className={`tool-icon ${small ? "small" : ""}`} aria-hidden="true">
-      {icon ? (
-        <img src={`/tool-icons/${icon}`} alt="" draggable={false} />
+      {icon?.crop ? (
+        <svg
+          className="tool-icon-art"
+          viewBox={`${icon.crop.inset} ${icon.crop.inset} ${icon.crop.size} ${icon.crop.size}`}
+          focusable="false"
+        >
+          <image href={src} width={icon.crop.canvas} height={icon.crop.canvas} />
+        </svg>
+      ) : icon ? (
+        <img className="tool-icon-art" src={src} alt="" draggable={false} />
       ) : (
         <Layers size={small ? 13 : 19} strokeWidth={1.7} />
       )}
