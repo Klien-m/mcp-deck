@@ -1,30 +1,18 @@
 import { useEffect, useRef, type ReactNode } from "react";
-import {
-  X,
-  Plug,
-  Terminal,
-  Sparkles,
-  Code2,
-  Wind,
-  Bot,
-  Boxes,
-  Github,
-  Monitor,
-  Layers,
-} from "lucide-react";
-const icons: Record<string, typeof Plug> = {
-  codex: Terminal,
-  claude: Sparkles,
-  cursor: Code2,
-  gemini: Sparkles,
-  opencode: Terminal,
-  copilot: Github,
-  vscode: Code2,
-  windsurf: Wind,
-  kiro: Bot,
-  cline: Bot,
-  roo: Boxes,
-  "claude-desktop": Monitor,
+import { X, Layers } from "lucide-react";
+const icons: Record<string, string> = {
+  codex: "codex.png",
+  claude: "claude.png",
+  cursor: "cursor.png",
+  gemini: "gemini.png",
+  opencode: "opencode.png",
+  copilot: "copilot.svg",
+  vscode: "vscode.png",
+  windsurf: "windsurf.svg",
+  kiro: "kiro.svg",
+  cline: "cline.png",
+  roo: "roo.png",
+  "claude-desktop": "claude-desktop.png",
 };
 export function ToolIcon({
   id,
@@ -33,10 +21,14 @@ export function ToolIcon({
   id: string;
   small?: boolean;
 }) {
-  const Icon = icons[id] || Layers;
+  const icon = icons[id];
   return (
-    <span className={`tool-icon ${small ? "small" : ""} tool-${id}`}>
-      <Icon size={small ? 13 : 19} strokeWidth={1.7} />
+    <span className={`tool-icon ${small ? "small" : ""}`} aria-hidden="true">
+      {icon ? (
+        <img src={`/tool-icons/${icon}`} alt="" draggable={false} />
+      ) : (
+        <Layers size={small ? 13 : 19} strokeWidth={1.7} />
+      )}
     </span>
   );
 }

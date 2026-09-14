@@ -124,7 +124,6 @@ textarea:focus {
 .select-icon .tool-icon.small {
   width: 24px;
   height: 24px;
-  background: #f9fbf5;
 }
 .select-detail {
   flex: none;
@@ -417,40 +416,17 @@ button.primary:hover:not(:disabled) {
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  border-radius: 6px;
-  background: #f9faf5;
-  border: 1px solid #e0e5d8;
   color: #414e38;
+}
+.tool-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
 }
 .tool-icon.small {
   height: 16px;
   width: 16px;
-  border: none;
-  background: transparent;
-}
-.tool-claude,
-.tool-claude-desktop {
-  color: #b97455;
-}
-.tool-gemini {
-  color: #6d85b2;
-}
-.tool-codex,
-.tool-copilot,
-.tool-cursor {
-  color: #232b20;
-}
-.tool-vscode {
-  color: #5291b8;
-}
-.tool-windsurf {
-  color: #519d98;
-}
-.tool-kiro {
-  color: #8465a4;
-}
-.tool-roo {
-  color: #7d8761;
 }
 .sidebar-bottom {
   border-top: 1px solid #e1e5dc;
