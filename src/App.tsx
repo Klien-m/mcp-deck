@@ -79,6 +79,16 @@ export default function App() {
     const s = await request<Snapshot>("snapshot");
     const p = await request<Preview>("preview");
     setData(s);
+    setFilter((current) =>
+      current === "all" ||
+      current === "pending" ||
+      (s.targets.some((t) => t.id === current) &&
+        s.workspace.services.some(
+          (service) => !service.deleted && service.targets.includes(current),
+        ))
+        ? current
+        : "all",
+    );
     setPreview(p);
     setRevealPreview(false);
     return s;
@@ -259,6 +269,12 @@ export default function App() {
       </main>
     );
   const services = data.workspace.services.filter((s) => !s.deleted);
+  const toolTargets = data.targets
+    .map((t) => ({
+      ...t,
+      serviceCount: services.filter((s) => s.targets.includes(t.id)).length,
+    }))
+    .filter((t) => t.serviceCount > 0);
   const pendingIds = new Set(preview?.changes.map((c) => c.serviceId));
   const visible = services.filter(
     (s) =>
@@ -351,7 +367,7 @@ export default function App() {
             </button>
           </div>
           <div className="tool-nav">
-            {data.targets.map((t) => (
+            {toolTargets.map((t) => (
               <button
                 key={t.id}
                 className={`nav ${filter === t.id ? "active" : ""}`}
@@ -361,10 +377,7 @@ export default function App() {
                 <ToolIcon id={t.adapterId} />
                 <span>{t.name}</span>
                 <small className={t.error ? "warning" : ""}>
-                  {t.error
-                    ? "!"
-                    : services.filter((s) => s.targets.includes(t.id)).length ||
-                      "—"}
+                  {t.error ? "!" : t.serviceCount}
                 </small>
               </button>
             ))}
