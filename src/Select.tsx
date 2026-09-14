@@ -25,6 +25,7 @@ export function Select({
 }) {
   const id = useId();
   const trigger = useRef<HTMLButtonElement>(null);
+  const popup = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
   const activeSource = useRef<"keyboard" | "pointer">("keyboard");
   const typeahead = useRef({ text: "", at: 0 });
@@ -98,13 +99,13 @@ export function Select({
       const target = event.target as Node;
       if (
         !trigger.current?.contains(target) &&
-        !menu.current?.contains(target)
+        !popup.current?.contains(target)
       ) {
         setOpen(false);
       }
     }
     function scroll(event: Event) {
-      if (!menu.current?.contains(event.target as Node)) place();
+      if (!popup.current?.contains(event.target as Node)) place();
     }
     place();
     window.addEventListener("resize", place);
@@ -207,10 +208,7 @@ export function Select({
         trigger.current &&
         createPortal(
           <div
-            ref={menu}
-            id={id}
-            role="listbox"
-            aria-label={label}
+            ref={popup}
             className="select-menu"
             style={position || { visibility: "hidden" }}
             onMouseDown={(event) => event.preventDefault()}
@@ -218,31 +216,39 @@ export function Select({
               activeSource.current = "pointer";
             }}
           >
-            {options.map((option, index) => (
-              <div
-                key={option.value}
-                id={`${id}-${index}`}
-                role="option"
-                aria-selected={option.value === value}
-                className={`select-option ${index === active ? "is-active" : ""}`}
-                onClick={() => choose(index)}
-              >
-                {option.icon && (
-                  <span className="select-icon" aria-hidden="true">
-                    {option.icon}
-                  </span>
-                )}
-                <span className="select-text">{option.label}</span>
-                {option.detail && (
-                  <span className="select-detail">{option.detail}</span>
-                )}
-                <span className="select-check" aria-hidden="true">
-                  {option.value === value && (
-                    <Check size={15} strokeWidth={2} />
+            <div
+              ref={menu}
+              id={id}
+              role="listbox"
+              aria-label={label}
+              className="select-menu-list"
+            >
+              {options.map((option, index) => (
+                <div
+                  key={option.value}
+                  id={`${id}-${index}`}
+                  role="option"
+                  aria-selected={option.value === value}
+                  className={`select-option ${index === active ? "is-active" : ""}`}
+                  onClick={() => choose(index)}
+                >
+                  {option.icon && (
+                    <span className="select-icon" aria-hidden="true">
+                      {option.icon}
+                    </span>
                   )}
-                </span>
-              </div>
-            ))}
+                  <span className="select-text">{option.label}</span>
+                  {option.detail && (
+                    <span className="select-detail">{option.detail}</span>
+                  )}
+                  <span className="select-check" aria-hidden="true">
+                    {option.value === value && (
+                      <Check size={15} strokeWidth={2} />
+                    )}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>,
           // Stay in the modal's top layer while escaping the scrolling form body.
           trigger.current.closest("dialog") || document.body,

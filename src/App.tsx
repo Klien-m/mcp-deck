@@ -245,7 +245,7 @@ export default function App() {
     return (
       <main className="startup">
         <div className="brand-mark">
-          <Grid2X2 />
+          <img src="/app-icon.png" alt="" />
         </div>
         <h1>MCP Deck</h1>
         <p>{fatal || (native ? "正在读取本地工作区…" : "请启动桌面应用")}</p>
@@ -335,7 +335,7 @@ export default function App() {
         <aside className="sidebar">
           <div className="brand">
             <span className="brand-mark">
-              <Grid2X2 size={23} />
+              <img src="/app-icon.png" alt="" />
             </span>
             MCP Deck
           </div>

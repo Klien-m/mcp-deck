@@ -63,11 +63,14 @@ codesign --force --deep --sign - "src-tauri/target/release/bundle/macos/MCP Deck
 codesign --verify --deep --strict "src-tauri/target/release/bundle/macos/MCP Deck.app"
 ```
 
-macOS 图标使用 `src-tauri/icons/macos-icon.svg`，画布内保留约 9.5% 的单侧透明边距，避免 Dock 中视觉尺寸偏大。修改图标后重新生成 ICNS：
+应用图标使用已选定的哑光卡片与插头设计，原图为 `src-tauri/icons/app-icon-source.png`。画布内保留约 8.5% 的单侧透明边距，适配 Dock 的视觉尺寸；应用内标识与打包图标使用同一份图案。修改原图后重新生成资源：
 
 ```bash
-npm run tauri icon -- src-tauri/icons/macos-icon.svg --output .local-dev/macos-icons
-cp .local-dev/macos-icons/icon.icns src-tauri/icons/icon.icns
+npm run tauri icon -- src-tauri/icons/app-icon-source.png --output .local-dev/app-icons
+for icon in 32x32.png 64x64.png 128x128.png 128x128@2x.png icon.png icon.icns icon.ico; do
+  cp ".local-dev/app-icons/$icon" "src-tauri/icons/$icon"
+done
+cp .local-dev/app-icons/128x128@2x.png public/app-icon.png
 ```
 
 应用位置：
