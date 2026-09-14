@@ -9,7 +9,7 @@ const claudeIcon: ToolIconAsset = {
 };
 // Keep official artwork intact; compensate only for transparent canvas padding.
 const icons: Record<string, ToolIconAsset> = {
-  codex: { file: "codex.png", crop: { canvas: 250, inset: 18, size: 216 } },
+  codex: { file: "codex.svg", crop: { canvas: 716, inset: 178, size: 360 } },
   claude: claudeIcon,
   cursor: { file: "cursor.svg" },
   gemini: { file: "gemini.svg" },

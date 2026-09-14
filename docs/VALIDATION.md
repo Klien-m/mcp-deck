@@ -165,3 +165,11 @@ Gemini CLI 改用官方品牌页的彩色终端 SVG，Roo Code 改用官方扩�
 验证：TypeScript / Vite 与 Tauri Release 构建通过；全部 11 份图标资源的 SHA-256 与来源记录一致，SVG 无脚本、事件处理器或远程资源。隔离原生 QA 欢迎页确认全部 12 个工具正常显示，Codex 已恢复 PNG，Gemini CLI、OpenCode 与 Roo Code SVG 图案清晰。正式安装版确认侧栏 Codex 和分配列表中的 Codex、Gemini CLI、OpenCode 正常加载；安装包与构建产物的可执行文件一致，完整签名校验通过，未携带 QA 环境变量。安装前后均为 10 条服务、0 项待应用、修订 10。
 
 改动仅涉及三个工具的资源映射、图标文件和来源文档。未操作服务分配、应用同步或启动 MCP，也未重复运行 Rust 核心测试。
+
+## Codex 官方花结 SVG（2026-09-14）
+
+Codex 改用 OpenAI 官方品牌包 `openai-logos.zip` 内的 `OpenAI-logos/SVGs/OAI_OpenAI-Blossom_Black.svg`，其花结主体与先前 Codex 官网 PNG 对应。使用未经改写的原始 SVG，显示层将 716 px 画布的留白校准为 `178 178 360 360` 视口。原始路径、颜色和比例保持不变。
+
+验证：全部 11 份资源均为 SVG，SHA-256 与来源记录一致，Codex 与品牌包条目逐字节一致；SVG 无脚本、事件处理器或远程资源。TypeScript / Vite、Tauri Release 构建及正式包、隔离 QA 包签名检查通过。原生 QA 欢迎页确认 12 个工具图标正常显示；正式安装版的 Codex 侧栏和分配列表显示黑色花结，无圆形终端符号及 PNG 底座，尺寸与其他工具协调。安装包可执行文件与构建产物一致，未携带 QA 环境变量。安装前后均为 10 条服务、0 项待应用、修订 10。
+
+仅更新 Codex 图标映射、资源与来源文档；未改动配置引擎、应用同步或启动 MCP，未重复运行 Rust 核心测试。

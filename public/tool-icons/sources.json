@@ -61,22 +61,23 @@
       "type": "image/svg+xml",
       "sha256": "000ec2162a72986334d517641efa3502735f6b53b9293d9772db92be679c8032"
     },
-    "codex.png": {
-      "url": "https://images.ctfassets.net/kftzwdyauwt9/77tJ5U1tgxHMZflZ5m4Z24/ace4d8b6ad200d87ebcb69c466344343/Blossom_4k_Icon_1.png?w=256",
-      "page": "https://openai.com/zh-Hans-CN/codex/",
-      "description": "Codex 官网当前展示的 ChatGPT / OpenAI Blossom 标识；官方页面提供 PNG。",
+    "codex.svg": {
+      "url": "https://cdn.openai.com/brand/openai-logos.zip",
+      "page": "https://openai.com/brand/",
+      "archiveMember": "OpenAI-logos/SVGs/OAI_OpenAI-Blossom_Black.svg",
+      "description": "官方 Blossom 花结矢量标识，与 Codex 官网当前 PNG 的主体图案对应。",
       "displayBounds": [
-        18,
-        18,
-        234,
-        234
+        178,
+        178,
+        538,
+        538
       ],
       "usedBy": [
         "codex"
       ],
-      "bytes": 42879,
-      "type": "image/png",
-      "sha256": "deae2c28f2974ae24d93b4132b23865c10daa07cef2a757c4acf07dc40054be5"
+      "bytes": 2415,
+      "type": "image/svg+xml",
+      "sha256": "75c1e9fffa5e8c437bec1d67197a73992bca45d166c6ff23215185dea8fae92a"
     },
     "claude.svg": {
       "page": "https://claude.com/",
