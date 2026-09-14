@@ -422,8 +422,14 @@ pub fn patch(
         if !doc.contains_key(adapter.root_key) {
             doc[adapter.root_key] = toml_edit::Item::Table(toml_edit::Table::new());
         }
+        if doc[adapter.root_key].is_inline_table() {
+            let root = std::mem::take(&mut doc[adapter.root_key]);
+            doc[adapter.root_key] = toml_edit::Item::Table(
+                root.into_table().map_err(|_| "MCP 节点不是 TOML 表")?,
+            );
+        }
         let servers = doc[adapter.root_key]
-            .as_table_like_mut()
+            .as_table_mut()
             .ok_or("MCP 节点不是 TOML 表")?;
         for (name, value) in patches {
             match value {
@@ -433,7 +439,13 @@ pub fn patch(
                     let mut part = fragment
                         .parse::<toml_edit::DocumentMut>()
                         .map_err(|_| "无法生成 TOML 表")?;
-                    servers.insert(name, part.remove("service").ok_or("服务为空")?);
+                    let mut table = part
+                        .remove("service")
+                        .ok_or("服务为空")?
+                        .into_table()
+                        .map_err(|_| "服务配置必须是 TOML 表")?;
+                    table.set_implicit(false);
+                    servers.insert(name, toml_edit::Item::Table(table));
                 }
                 None => {
                     servers.remove(name);

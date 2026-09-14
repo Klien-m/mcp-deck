@@ -140,6 +140,51 @@ fn native_fields_are_preserved_and_readonly_shapes_are_rejected() {
 }
 
 #[test]
+fn cursor_git_sync_writes_named_codex_section_and_preserves_other_settings() {
+    let (_temp, mut engine) = setup();
+    put(&engine, "cursor", r#"{"mcpServers":{"git":{"command":"python3","args":["-m","mcp_server_git"]}}}"#);
+    let original = "# keep model\nmodel = 'keep-model'\n\n[mcp_servers.node_repl]\nargs = []\ncommand = '/qa/node_repl'\nstartup_timeout_sec = 120\n";
+    put(&engine, "codex", original);
+    engine.adopt("cursor", vec!["git".into()]).unwrap();
+    let sid = engine.workspace.services[0].id.clone();
+    engine.assign(&sid, "codex", true).unwrap();
+    let preview = engine.preview().unwrap();
+    assert_eq!(preview.changes.len(), 1);
+    assert_eq!(preview.changes[0].key, "git");
+    engine.apply(&preview.id).unwrap();
+
+    let output = fs::read_to_string(path(&engine, "codex")).unwrap();
+    assert!(output.contains("[mcp_servers.git]\n"), "{output}");
+    assert!(output.contains("# keep model\nmodel = 'keep-model'"));
+    assert!(output.contains("[mcp_servers.node_repl]\nargs = []\ncommand = '/qa/node_repl'\nstartup_timeout_sec = 120"));
+    let parsed = adapters::parse(&adapters::get("codex").unwrap(), &output).unwrap();
+    assert_eq!(parsed["git"], json!({"command":"python3","args":["-m","mcp_server_git"]}));
+    assert_eq!(parsed["node_repl"]["startup_timeout_sec"], 120);
+    assert!(engine.preview().unwrap().changes.is_empty());
+}
+
+#[test]
+fn codex_patch_expands_managed_inline_entries_and_quotes_server_names() {
+    let adapter = adapters::get("codex").unwrap();
+    for source in [
+        "[mcp_servers]\ngit = { command = 'old' }\nuntouched = { command = 'keep' }\n",
+        "mcp_servers = { git = { command = 'old' }, untouched = { command = 'keep' } }\n",
+    ] {
+        let raw = json!({"command":"python3","args":["-m","mcp_server_git"],"env":{"TOKEN":"example"}});
+        let output = adapters::patch(&adapter, Some(source), &BTreeMap::from([
+            ("git".into(), Some(raw.clone())),
+            ("a.b with space".into(), Some(raw.clone())),
+        ])).unwrap();
+        assert!(output.contains("[mcp_servers.git]\n"), "{output}");
+        assert!(output.contains("[mcp_servers.\"a.b with space\"]\n"), "{output}");
+        let parsed = adapters::parse(&adapter, &output).unwrap();
+        assert_eq!(parsed["git"], raw);
+        assert_eq!(parsed["a.b with space"], raw);
+        assert_eq!(parsed["untouched"], json!({"command":"keep"}));
+    }
+}
+
+#[test]
 fn apply_persists_and_rollback_restores_exact_original_text() {
     let (_temp, mut engine) = setup();
     let original="{\n  // untouched\n  \"settings\": {\"extra\":42},\n  \"mcpServers\": {\"unmanaged\":{\"command\":\"uvx\"}}\n}\n";
