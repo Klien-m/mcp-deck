@@ -12,14 +12,14 @@ const icons: Record<string, ToolIconAsset> = {
   codex: { file: "codex.png", crop: { canvas: 250, inset: 18, size: 216 } },
   claude: claudeIcon,
   cursor: { file: "cursor.svg" },
-  gemini: { file: "gemini.png" },
-  opencode: { file: "opencode.png" },
+  gemini: { file: "gemini.svg" },
+  opencode: { file: "opencode.svg" },
   copilot: { file: "copilot.svg" },
   vscode: { file: "vscode.svg" },
   windsurf: { file: "windsurf.svg" },
   kiro: { file: "kiro.svg" },
   cline: { file: "cline.svg" },
-  roo: { file: "roo.png" },
+  roo: { file: "roo.svg" },
   "claude-desktop": claudeIcon,
 };
 export function ToolIcon({

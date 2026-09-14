@@ -1,23 +1,28 @@
 {
   "retrievedAt": "2026-09-14",
   "icons": {
-    "gemini.png": {
-      "url": "https://geminicli.com/icon.png",
-      "bytes": 46696,
-      "type": "image/png",
-      "sha256": "351e9f5b1bf863d738cd7be4ed040a625a1419450ae7fc490143e4042b7c2438",
+    "gemini.svg": {
+      "url": "https://geminicli.com/brandassets/gemini-cli-icon_full-color.svg",
+      "page": "https://geminicli.com/brand-kit/",
       "usedBy": [
         "gemini"
-      ]
+      ],
+      "bytes": 2843,
+      "type": "image/svg+xml",
+      "sha256": "d2b511e4d9a97bb849526646cf1e7705ffa028a52eb53d847c6c3de1e9a40a73"
     },
-    "opencode.png": {
-      "url": "https://opencode.ai/favicon-96x96-v3.png",
-      "bytes": 536,
-      "type": "image/png",
-      "sha256": "aa34092540de60c889610edfa3c25316e215f12d88af29cfba530d09aee7265c",
+    "opencode.svg": {
+      "page": "https://opencode.ai/brand",
+      "url": "https://opencode.ai/_build/assets/index-B88RT2UG.js",
+      "sourceElement": "logoLightSquareSvg / opencode-logo-light-square.svg",
+      "extraction": "仅解码官方品牌页 SVG 下载资源的 data URI，保留原始路径、填色和视口。",
+      "sourceDocumentSha256": "e707982d982418d4453d08fa9ad87cb339b17794a81ce7f5283221772f3e4b2c",
       "usedBy": [
         "opencode"
-      ]
+      ],
+      "bytes": 613,
+      "type": "image/svg+xml",
+      "sha256": "4510b522890d06fc757e545094db2e519211f1fd2bfe5728e72543e46ff6285e"
     },
     "copilot.svg": {
       "url": "https://raw.githubusercontent.com/github/octicons/main/icons/copilot-24.svg",
@@ -46,14 +51,15 @@
         "kiro"
       ]
     },
-    "roo.png": {
-      "url": "https://raw.githubusercontent.com/RooCodeInc/Roo-Code/main/src/assets/icons/icon.png",
-      "bytes": 5626,
-      "type": "image/png",
-      "sha256": "6dfbd44c806ace9d2b2d71f011cfb72fea5bfd501ab586e841a4c5f87c10f39a",
+    "roo.svg": {
+      "url": "https://raw.githubusercontent.com/RooCodeInc/Roo-Code/main/src/assets/icons/icon.svg",
+      "page": "https://github.com/RooCodeInc/Roo-Code/blob/main/src/assets/icons/icon.svg",
       "usedBy": [
         "roo"
-      ]
+      ],
+      "bytes": 884,
+      "type": "image/svg+xml",
+      "sha256": "000ec2162a72986334d517641efa3502735f6b53b9293d9772db92be679c8032"
     },
     "codex.png": {
       "url": "https://images.ctfassets.net/kftzwdyauwt9/77tJ5U1tgxHMZflZ5m4Z24/ace4d8b6ad200d87ebcb69c466344343/Blossom_4k_Icon_1.png?w=256",

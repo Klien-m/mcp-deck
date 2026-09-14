@@ -157,3 +157,11 @@ Codex、Claude、Cursor、VS Code 与 Cline 改用官网资源。Cursor、VS Cod
 验证：TypeScript / Vite 与 Tauri Release 构建通过；全部 11 份资源的 SHA-256 与来源记录一致，组件引用均有对应文件，SVG 不包含脚本、事件处理器或外部资源引用。原生隔离 QA 欢迎页确认 12 个工具图标正常显示，Claude 两端图案一致，Cline 机器人、Cursor 立方体和 VS Code 蓝色标识可辨认。正式安装版确认侧栏 26 px、服务列表 16 px 和分配列表中的新资源已加载，签名校验通过，未携带 QA 环境变量。
 
 此次改动限于共享图标映射、资源与来源文档。未操作服务分配、写入 Agent 配置或启动 MCP；未重复运行 Rust 核心测试。安装前后均为 10 条服务、1 项待应用、修订 9。
+
+## Gemini CLI、OpenCode 与 Roo Code SVG（2026-09-14）
+
+Gemini CLI 改用官方品牌页的彩色终端 SVG，Roo Code 改用官方扩展仓库的袋鼠 SVG，两者与下载文件逐字节一致。OpenCode 使用官方品牌页提供的浅色背景方形 SVG，仅解码其下载资源的 data URI，保留原始路径、颜色与视口。Codex 按用户选择保留上一版官网 PNG，资源字节与原版本一致。
+
+验证：TypeScript / Vite 与 Tauri Release 构建通过；全部 11 份图标资源的 SHA-256 与来源记录一致，SVG 无脚本、事件处理器或远程资源。隔离原生 QA 欢迎页确认全部 12 个工具正常显示，Codex 已恢复 PNG，Gemini CLI、OpenCode 与 Roo Code SVG 图案清晰。正式安装版确认侧栏 Codex 和分配列表中的 Codex、Gemini CLI、OpenCode 正常加载；安装包与构建产物的可执行文件一致，完整签名校验通过，未携带 QA 环境变量。安装前后均为 10 条服务、0 项待应用、修订 10。
+
+改动仅涉及三个工具的资源映射、图标文件和来源文档。未操作服务分配、应用同步或启动 MCP，也未重复运行 Rust 核心测试。
