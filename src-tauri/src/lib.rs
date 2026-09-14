@@ -44,6 +44,8 @@ mod desktop {
         Preview {
             #[serde(default)]
             reveal: bool,
+            #[serde(default)]
+            include_details: bool,
         },
         Apply {
             id: String,
@@ -109,7 +111,14 @@ mod desktop {
                 engine.save_target(target)?;
                 Ok(Value::Null)
             }
-            Request::Preview { reveal } => Ok(json!(engine.preview_values(reveal)?)),
+            Request::Preview {
+                reveal,
+                include_details,
+            } => Ok(json!(if include_details {
+                engine.preview_with_details()?
+            } else {
+                engine.preview_values(reveal)?
+            })),
             Request::Apply { id } => {
                 engine.apply(&id)?;
                 Ok(Value::Null)

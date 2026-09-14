@@ -63,7 +63,6 @@ export default function App() {
     Target | null | undefined
   >();
   const [revealPreview, setRevealPreview] = useState(false);
-  const [previewLoading, setPreviewLoading] = useState(false);
   const [preview, setPreview] = useState<Preview | null>(null);
   const [checks, setChecks] = useState<Checks | null>(null);
   const [toast, setToast] = useState("");
@@ -76,9 +75,9 @@ export default function App() {
   const [exportIds, setExportIds] = useState<string[]>([]);
   const [secrets, setSecrets] = useState(false);
   const search = useRef<HTMLInputElement>(null);
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (includeDetails = false) => {
     const s = await request<Snapshot>("snapshot");
-    const p = await request<Preview>("preview");
+    const p = await request<Preview>("preview", { includeDetails });
     setData(s);
     setFilter((current) =>
       current === "all" ||
@@ -130,7 +129,7 @@ export default function App() {
     setError("");
     try {
       await request(op, args);
-      await refresh();
+      await refresh(view === "preview");
       notice(message);
       return true;
     } catch (e) {
@@ -160,7 +159,7 @@ export default function App() {
     setError("");
     setRevealPreview(false);
     try {
-      setPreview(await request<Preview>("preview"));
+      setPreview(await request<Preview>("preview", { includeDetails: true }));
       setView("preview");
     } catch (e) {
       setError(String(e));
@@ -236,7 +235,7 @@ export default function App() {
     }
   }
   const close = () => {
-    if (!busy && !previewLoading) {
+    if (!busy) {
       setView(null);
       setError("");
     }
@@ -1208,7 +1207,6 @@ export default function App() {
                 className="primary"
                 disabled={
                   busy ||
-                  previewLoading ||
                   !!preview.errors.length ||
                   !preview.changes.length ||
                   preview.changes.some((c) => c.conflict)
@@ -1237,22 +1235,8 @@ export default function App() {
             <input
               type="checkbox"
               checked={revealPreview}
-              disabled={busy || previewLoading}
-              onChange={async (e) => {
-                const value = e.target.checked;
-                setPreviewLoading(true);
-                setError("");
-                try {
-                  setPreview(
-                    await request<Preview>("preview", { reveal: value }),
-                  );
-                  setRevealPreview(value);
-                } catch (e) {
-                  setError(String(e));
-                } finally {
-                  setPreviewLoading(false);
-                }
-              }}
+              disabled={busy}
+              onChange={(e) => setRevealPreview(e.target.checked)}
             />
             显示完整差异（包含命令参数、环境变量与凭据）
           </label>
@@ -1267,7 +1251,10 @@ export default function App() {
               <p>没有需要写入的服务变更。</p>
             </div>
           )}
-          {preview.changes.map((c, i) => (
+          {(revealPreview
+            ? preview.fullChanges ?? preview.changes
+            : preview.changes
+          ).map((c, i) => (
             <div
               className={`change ${c.conflict ? "conflict" : ""}`}
               key={`${c.targetId}-${c.serviceId}-${i}`}
@@ -1294,7 +1281,7 @@ export default function App() {
                     {c.message}
                   </p>
                   <button
-                    disabled={busy || previewLoading}
+                    disabled={busy}
                     onClick={() =>
                       perform(
                         "resolve",
@@ -1310,7 +1297,7 @@ export default function App() {
                     采用磁盘版本
                   </button>
                   <button
-                    disabled={busy || previewLoading}
+                    disabled={busy}
                     onClick={() =>
                       perform(
                         "resolve",

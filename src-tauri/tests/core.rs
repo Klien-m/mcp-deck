@@ -172,6 +172,71 @@ fn apply_persists_and_rollback_restores_exact_original_text() {
 }
 
 #[test]
+fn detailed_preview_keeps_masked_and_full_values_on_one_applicable_plan() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "managed");
+    engine.assign(&sid, "codex", true).unwrap();
+    let masked = engine.preview().unwrap();
+    assert!(masked.full_changes.is_none());
+    assert!(serde_json::to_value(&masked)
+        .unwrap()
+        .get("fullChanges")
+        .is_none());
+
+    let preview = engine.preview_with_details().unwrap();
+    let full = &preview.full_changes.as_ref().unwrap()[0];
+    let after = full.after.as_ref().unwrap();
+    assert_eq!(after["env"]["TOKEN"], "line1\nline2");
+    assert_eq!(after["args"], json!(stdio().args));
+    assert_eq!(preview.changes[0].after, Some(redact(after)));
+    assert_eq!(preview.changes[0].after, masked.changes[0].after);
+    assert!(!path(&engine, "codex").exists());
+
+    engine.apply(&preview.id).unwrap();
+    let entries = adapters::parse(
+        &adapters::get("codex").unwrap(),
+        &fs::read_to_string(path(&engine, "codex")).unwrap(),
+    )
+    .unwrap();
+    assert_eq!(&entries["managed"], after);
+    let aligned = engine.preview_with_details().unwrap();
+    assert!(aligned.changes.is_empty());
+    assert!(aligned.full_changes.unwrap().is_empty());
+}
+
+#[test]
+fn detailed_preview_preserves_conflicts_and_original_disk_content() {
+    let (_temp, mut engine) = setup();
+    let original = "{\"mcpServers\":{\"managed\":{\"command\":\"node\",\"env\":{\"TOKEN\":\"disk-secret\"}}}}";
+    put(&engine, "cursor", original);
+    let sid = add(&mut engine, "managed");
+    engine.assign(&sid, "cursor", true).unwrap();
+    let preview = engine.preview_with_details().unwrap();
+    let masked = &preview.changes[0];
+    let full = &preview.full_changes.as_ref().unwrap()[0];
+    assert!(masked.conflict && full.conflict);
+    assert_eq!(masked.before, full.before.as_ref().map(redact));
+    assert_eq!(masked.after, full.after.as_ref().map(redact));
+    assert_eq!(full.before.as_ref().unwrap()["env"]["TOKEN"], "disk-secret");
+    assert!(engine.apply(&preview.id).is_err());
+    assert_eq!(fs::read_to_string(path(&engine, "cursor")).unwrap(), original);
+}
+
+#[test]
+fn detailed_preview_still_rejects_late_disk_edits_before_any_write() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "managed");
+    engine.assign(&sid, "codex", true).unwrap();
+    engine.assign(&sid, "cursor", true).unwrap();
+    let preview = engine.preview_with_details().unwrap();
+    let changed = "{\"mcpServers\":{},\"late\":true}";
+    put(&engine, "cursor", changed);
+    assert!(engine.apply(&preview.id).is_err());
+    assert!(!path(&engine, "codex").exists());
+    assert_eq!(fs::read_to_string(path(&engine, "cursor")).unwrap(), changed);
+}
+
+#[test]
 fn preview_hash_blocks_late_edits_without_writing_any_target() {
     let (_temp, mut engine) = setup();
     let sid = add(&mut engine, "new");

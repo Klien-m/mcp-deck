@@ -75,6 +75,7 @@ export interface Change {
 export interface Preview {
   id: string;
   changes: Change[];
+  fullChanges?: Change[];
   errors: string[];
   fileCount: number;
 }

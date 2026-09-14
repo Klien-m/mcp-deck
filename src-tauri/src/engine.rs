@@ -65,6 +65,8 @@ struct Plan {
 pub struct Preview {
     pub id: String,
     pub changes: Vec<Change>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub full_changes: Option<Vec<Change>>,
     pub errors: Vec<String>,
     pub file_count: usize,
 }
@@ -421,6 +423,17 @@ impl Engine {
         self.preview_values(false)
     }
 
+    pub fn preview_with_details(&mut self) -> Result<Preview> {
+        // Both display modes must describe the same plan and disk snapshot.
+        let mut preview = self.preview_values(true)?;
+        preview.full_changes = Some(preview.changes.clone());
+        for change in &mut preview.changes {
+            change.before = change.before.as_ref().map(redact);
+            change.after = change.after.as_ref().map(redact);
+        }
+        Ok(preview)
+    }
+
     pub fn preview_values(&mut self, reveal: bool) -> Result<Preview> {
         let mut changes = vec![];
         let mut errors = vec![];
@@ -538,6 +551,7 @@ impl Engine {
         Ok(Preview {
             id: plan_id,
             changes,
+            full_changes: None,
             errors,
             file_count,
         })
