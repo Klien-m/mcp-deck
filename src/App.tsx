@@ -272,6 +272,11 @@ export default function App() {
   const service = visible.find((s) => s.id === selected) || visible[0];
   const detected = data.targets.filter((t) => t.exists).length;
   const firstFound = data.targets.find((t) => t.exists)?.id || "codex";
+  const importableKeys = discovered
+    .filter((d) => d.config && !d.error && !d.managed)
+    .map((d) => d.key);
+  const chosenKeys = importableKeys.filter((key) => chosen.includes(key));
+  const allChosen = importableKeys.length > 0 && chosenKeys.length === importableKeys.length;
   const adapter = (id: string) => data.adapters.find((a) => a.id === id)!;
   const serviceChanges =
     preview?.changes.filter((c) => c.serviceId === service?.id) || [];
@@ -940,12 +945,12 @@ export default function App() {
               <button onClick={close}>取消</button>
               <button
                 className="primary"
-                disabled={busy || !chosen.length}
+                disabled={busy || !chosenKeys.length}
                 onClick={async () => {
                   if (
                     await perform(
                       "adopt",
-                      { targetId: discoveryTarget, keys: chosen },
+                      { targetId: discoveryTarget, keys: chosenKeys },
                       "已纳入服务库，原配置保持不变",
                     )
                   ) {
@@ -954,7 +959,7 @@ export default function App() {
                   }
                 }}
               >
-                纳入管理 {chosen.length ? `(${chosen.length})` : ""}
+                纳入管理 {chosenKeys.length ? `(${chosenKeys.length})` : ""}
               </button>
             </>
           }
@@ -982,34 +987,58 @@ export default function App() {
             <p className="muted">正在读取…</p>
           ) : discovered.length ? (
             <div className="discover-list">
-              {discovered.map((d) => (
-                <label className="discover-item" key={d.key}>
+              <div className="discover-controls">
+                <label className={`discover-select-all ${!importableKeys.length ? "is-disabled" : ""}`}>
                   <input
                     type="checkbox"
-                    checked={chosen.includes(d.key)}
-                    disabled={!!d.error || d.managed}
-                    onChange={(e) =>
-                      setChosen((c) =>
-                        e.target.checked
-                          ? [...c, d.key]
-                          : c.filter((k) => k !== d.key),
-                      )
-                    }
+                    checked={allChosen}
+                    ref={(input) => {
+                      if (input) input.indeterminate = chosenKeys.length > 0 && !allChosen;
+                    }}
+                    disabled={!importableKeys.length}
+                    onChange={(e) => setChosen(e.target.checked ? importableKeys : [])}
                   />
-                  <Plug size={20} />
-                  <div>
-                    <strong>{d.key}</strong>
-                    <small>
-                      {d.managed
-                        ? "已纳入管理"
-                        : d.error || `${d.config?.transport} · 可导入`}
-                    </small>
-                  </div>
-                  <span className="tag">
-                    {d.error ? "只读保留" : d.managed ? "已管理" : "已有配置"}
-                  </span>
+                  全选可导入项
                 </label>
-              ))}
+                <span className="discover-selection" role="status" aria-live="polite">
+                  {importableKeys.length
+                    ? `已选 ${chosenKeys.length} / ${importableKeys.length} 项`
+                    : "没有可导入项"}
+                </span>
+              </div>
+              {discovered.map((d) => {
+                const unsupported = !!d.error || !d.config;
+                const unavailable = unsupported || d.managed;
+                const checked = chosenKeys.includes(d.key);
+                return (
+                  <label
+                    className={`discover-item ${unsupported ? "is-unsupported" : d.managed ? "is-managed" : checked ? "is-selected" : ""}`}
+                    key={d.key}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checked}
+                      disabled={unavailable}
+                      onChange={(e) => {
+                        const checked = e.target.checked;
+                        setChosen((c) => checked ? [...c, d.key] : c.filter((k) => k !== d.key));
+                      }}
+                    />
+                    {unsupported ? <AlertTriangle size={20} /> : <Plug size={20} />}
+                    <div>
+                      <strong>{d.key}</strong>
+                      <small>
+                        {unsupported
+                          ? d.error || "无法识别此配置，原配置保持不变"
+                          : d.managed ? "已纳入服务库，无需重复导入" : `${d.config?.transport} · 可导入`}
+                      </small>
+                    </div>
+                    <span className="tag">
+                      {unsupported ? "不支持" : d.managed ? "已管理" : checked ? "已选择" : "可导入"}
+                    </span>
+                  </label>
+                );
+              })}
             </div>
           ) : (
             <div className="empty-card">

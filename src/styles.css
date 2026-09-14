@@ -1117,6 +1117,34 @@ label small {
 .discover-list {
   border: 1px solid #dfe7d2;
   border-radius: 7px;
+  overflow: hidden;
+}
+.discover-controls {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 12px 15px;
+  background: #f4f6ee;
+  border-bottom: 1px solid #dfe7d2;
+}
+.discover-select-all {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0;
+  color: #465b36;
+  cursor: pointer;
+}
+.discover-selection {
+  font-size: 11px;
+  color: #707c65;
+  font-variant-numeric: tabular-nums;
+}
+.discover-select-all.is-disabled {
+  color: #858b7e;
+  cursor: not-allowed;
 }
 .discover-item {
   display: flex;
@@ -1130,10 +1158,19 @@ label small {
 .discover-item:last-child {
   border: none;
 }
-.discover-item > input {
+.discover-item > input,
+.discover-select-all > input {
   width: 16px;
+  height: 16px;
+  padding: 0;
+  flex: 0 0 16px;
   margin: 0;
   accent-color: #6b8258;
+  cursor: inherit;
+}
+.discover-item > svg,
+.discover-item > .tag {
+  flex-shrink: 0;
 }
 .discover-item > div {
   flex: 1;
@@ -1143,9 +1180,47 @@ label small {
   font-size: 13px;
   font-weight: 500;
   color: #465b36;
+  overflow-wrap: anywhere;
 }
 .discover-item small {
   margin-top: 4px;
+  overflow-wrap: anywhere;
+}
+.discover-item:not(.is-unsupported):not(.is-managed):hover {
+  background: #f2f6eb;
+}
+.discover-item.is-selected {
+  background: #edf3e5;
+}
+.discover-item.is-selected .tag {
+  background: #e0ebd4;
+  color: #465f34;
+}
+.discover-item.is-unsupported {
+  background: #faf5eb;
+  box-shadow: inset 3px 0 #d9b67a;
+  cursor: not-allowed;
+}
+.discover-item.is-unsupported > svg {
+  color: #a17637;
+}
+.discover-item.is-unsupported strong {
+  color: #756448;
+}
+.discover-item.is-unsupported small {
+  color: #897452;
+}
+.discover-item.is-unsupported .tag {
+  background: #efe0c5;
+  color: #805b24;
+}
+.discover-item.is-managed {
+  background: #f4f5f0;
+  cursor: not-allowed;
+}
+.discover-item.is-managed strong,
+.discover-item.is-managed > svg {
+  color: #7a8472;
 }
 .empty-card {
   padding: 40px 20px;
