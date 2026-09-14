@@ -25,6 +25,7 @@ body,
 .service-list,
 .detail,
 dialog,
+.modal-body,
 .code,
 textarea,
 .select-menu {
@@ -898,7 +899,11 @@ dialog {
   background: #fcfdf9;
   color: #445339;
   box-shadow: 0 20px 100px #1c2d1635;
-  overflow: auto;
+  overflow: hidden;
+}
+dialog[open] {
+  display: flex;
+  flex-direction: column;
 }
 dialog::backdrop {
   background: #27351e45;
@@ -913,8 +918,7 @@ dialog.wide {
   justify-content: space-between;
   padding: 19px 24px;
   border-bottom: 1px solid var(--line);
-  position: sticky;
-  top: 0;
+  flex-shrink: 0;
   background: #fcfdf9;
   z-index: 2;
 }
@@ -930,6 +934,8 @@ dialog.wide {
 }
 .modal-body {
   padding: 23px 24px;
+  min-height: 0;
+  overflow-y: auto;
   overflow-wrap: anywhere;
 }
 .modal-footer {
@@ -937,8 +943,7 @@ dialog.wide {
   align-items: center;
   justify-content: flex-end;
   gap: 9px;
-  position: sticky;
-  bottom: 0;
+  flex-shrink: 0;
   background: #f6f8f0;
   border-top: 1px solid var(--line);
   padding: 16px 24px;
