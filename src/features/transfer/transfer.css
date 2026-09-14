@@ -1,0 +1,26 @@
+.transfer-code {
+  width: 100%;
+  margin-top: 12px;
+  min-height: 260px;
+}
+.file-picker {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  position: relative;
+  border: 1px solid #d9e2cc;
+  border-radius: 5px;
+  padding: 7px 10px;
+  font-size: 11px;
+  margin: 0;
+  overflow: hidden;
+  cursor: pointer;
+}
+.file-picker input {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  margin: 0;
+  padding: 0;
+}

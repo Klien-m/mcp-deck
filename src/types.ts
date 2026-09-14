@@ -19,6 +19,13 @@ export interface Service {
   native: Record<string, unknown>;
   deleted: boolean;
 }
+export interface ServiceInput {
+  id: string | null;
+  key: string;
+  name: string;
+  description: string;
+  config: Config;
+}
 export interface Adapter {
   id: string;
   name: string;
@@ -40,10 +47,16 @@ export interface TargetStatus extends Target {
   count: number;
   error: string | null;
 }
+export type HistoryStatus =
+  | "applied"
+  | "recovered"
+  | "recovery-needed"
+  | "rolled-back"
+  | "recovery-kept";
 export interface History {
   id: string;
   at: number;
-  status: string;
+  status: HistoryStatus;
   summary: string;
   paths: string[];
   count: number;
@@ -61,12 +74,13 @@ export interface Snapshot {
   dataDir: string;
   isolated: boolean;
 }
+export type ChangeAction = "add" | "update" | "remove";
 export interface Change {
   serviceId: string;
   targetId: string;
   targetName: string;
   key: string;
-  action: string;
+  action: ChangeAction;
   before: unknown;
   after: unknown;
   conflict: boolean;

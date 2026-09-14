@@ -1,0 +1,56 @@
+@media (max-width: 1150px) {
+  .columns {
+    grid-template-columns: 194px 288px minmax(0, 1fr);
+  }
+  .detail {
+    padding: 24px;
+  }
+  .sidebar {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .list-header {
+    padding-left: 18px;
+    padding-right: 18px;
+  }
+  .service {
+    gap: 8px;
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+  .service-meta > span:last-child {
+    font-size: 9px;
+  }
+  .settings > div {
+    grid-template-columns: 83px 1fr;
+  }
+  .identity h2 {
+    font-size: 22px;
+  }
+  .large-icon {
+    width: 37px;
+    height: 37px;
+  }
+  .detail-top {
+    align-items: flex-start;
+  }
+  .welcome {
+    padding-left: 6px;
+    padding-right: 6px;
+  }
+  .welcome h2 {
+    font-size: 25px;
+  }
+  .welcome-actions {
+    flex-wrap: wrap;
+  }
+  .welcome-tools {
+    max-width: 280px;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  * {
+    transition: none !important;
+    animation: none !important;
+  }
+}

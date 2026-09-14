@@ -101,13 +101,23 @@ CARGO_HOME="$PWD/.local-dev/cargo-home" npm test
 
 | 位置 | 职责 |
 | --- | --- |
-| `src/App.tsx`、`Editor.tsx` | A 方向界面、编辑、发现、差异、恢复与导出 |
-| `src/api.ts`、`types.ts` | Tauri IPC 和前端契约 |
+| `src/App.tsx`、`src/layout/` | 工作区装配、导航、弹窗路由、启动与空状态 |
+| `src/features/services/` | 服务列表、筛选选择、详情和服务编辑表单 |
+| `src/features/targets/` | 目标路径管理、目标编辑和本机配置发现 |
+| `src/features/transfer/`、`src/features/sync/` | 导入导出、同步预览、冲突处理与恢复记录 |
+| `src/hooks/useWorkspace.ts` | 快照和预览刷新，统一协调所有写操作、忙碌状态与错误 |
+| `src/styles.css`、`src/styles/`、功能目录内 CSS | 样式入口、公共规则及按功能归属的样式；响应式覆盖最后加载 |
+| `src/api.ts`、`types.ts` | 按命令关联参数及返回值的 Tauri IPC 契约 |
 | `src-tauri/src/model.rs` | 服务、目标、绑定、校验和脱敏 |
-| `src-tauri/src/adapters.rs` | 注册表、工具方言、路径、JSONC / TOML 补丁 |
-| `src-tauri/src/engine.rs` | 用例、基线与冲突、写入事务、恢复 |
+| `src-tauri/src/adapters/` | 注册表与路径、工具字段转换、JSONC / TOML 文档编辑 |
+| `src-tauri/src/engine/mod.rs` | 引擎生命周期、用例入口和工作区原子提交 |
+| `src-tauri/src/engine/{services,discovery,targets,transfer,diagnostics}.rs` | 服务变更、发现导入、目标路径、导出与配置诊断 |
+| `src-tauri/src/engine/{sync,planner,transaction}.rs` | 预览计划生命周期、纯计划计算、备份写入与故障恢复 |
 | `src-tauri/src/storage.rs` | 文件约束、进程锁、原子替换与回读 |
-| `src-tauri/src/lib.rs` | 桌面命令分发和运行目录 |
+| `src-tauri/src/commands.rs`、`lib.rs` | 可独立验证的命令契约与分发、桌面状态锁及运行目录 |
 | `src-tauri/tests/core.rs` | 配置契约、保留语义、并发和故障恢复测试 |
+| `src-tauri/tests/commands.rs` | IPC 参数与返回值、预览应用及导出保护测试 |
 
 进一步见 [适配器说明](docs/ADAPTERS.md)、[验证记录](docs/VALIDATION.md)。
+
+功能组件仅接收所需数据和具体操作回调；只有工作区协调层调用写入命令。Rust 用例在工作区副本上运行，通过校验并持久化后才发布新状态；适配器转换不负责文件 IO，事务模块统一负责目标文件与恢复日志的写入协议。
