@@ -149,3 +149,11 @@ TypeScript / Vite、Tauri Release 构建及正式包签名校验通过。隔离�
 - 隔离原生窗口检查目标菜单顶部、滚动到底部的样式：滚动条均位于面板内边距中，圆角完整；最后一项 Claude Desktop 可见。Home / End / Enter 导航后正确选择 Claude Desktop，触发框、路径与空配置提示同步更新。
 - 已替换 `/Applications/MCP Deck.app` 并重新启动；安装包图标与仓库 ICNS 逐字节一致，应用标识仍为 `com.mcpdeck.desktop`，没有 QA 环境变量。安装前后界面均为 10 条服务、1 项待应用、修订 9。
 - QA 的 5 份源配置指纹保持不变；本轮没有纳入服务、应用同步或启动 MCP，也没有改动 Rust 配置引擎或重复运行其测试。
+
+## 官网工具图标与 SVG 优先（2026-09-14）
+
+Codex、Claude、Cursor、VS Code 与 Cline 改用官网资源。Cursor、VS Code、Cline 使用官方品牌包中的独立 SVG，Claude Code 与 Claude Desktop 共用官网字标中的橙色星形 SVG 路径。Codex 使用官网当前展示的 ChatGPT / OpenAI Blossom PNG，保留透明通道，并按原图画布校准显示。具体来源、导出方式和 SHA-256 记录在 `public/tool-icons/README.md` 与 `sources.json`。
+
+验证：TypeScript / Vite 与 Tauri Release 构建通过；全部 11 份资源的 SHA-256 与来源记录一致，组件引用均有对应文件，SVG 不包含脚本、事件处理器或外部资源引用。原生隔离 QA 欢迎页确认 12 个工具图标正常显示，Claude 两端图案一致，Cline 机器人、Cursor 立方体和 VS Code 蓝色标识可辨认。正式安装版确认侧栏 26 px、服务列表 16 px 和分配列表中的新资源已加载，签名校验通过，未携带 QA 环境变量。
+
+此次改动限于共享图标映射、资源与来源文档。未操作服务分配、写入 Agent 配置或启动 MCP；未重复运行 Rust 核心测试。安装前后均为 10 条服务、1 项待应用、修订 9。

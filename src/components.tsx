@@ -5,21 +5,20 @@ type ToolIconAsset = {
   crop?: { canvas: number; inset: number; size: number };
 };
 const claudeIcon: ToolIconAsset = {
-  file: "claude-desktop.png",
-  crop: { canvas: 128, inset: 13, size: 102 },
+  file: "claude.svg",
 };
-// App-bundle artwork includes Dock padding; frame the visible tile, not its canvas.
+// Keep official artwork intact; compensate only for transparent canvas padding.
 const icons: Record<string, ToolIconAsset> = {
-  codex: { file: "codex.png", crop: { canvas: 1024, inset: 100, size: 824 } },
+  codex: { file: "codex.png", crop: { canvas: 250, inset: 18, size: 216 } },
   claude: claudeIcon,
-  cursor: { file: "cursor.png", crop: { canvas: 128, inset: 14, size: 100 } },
+  cursor: { file: "cursor.svg" },
   gemini: { file: "gemini.png" },
   opencode: { file: "opencode.png" },
   copilot: { file: "copilot.svg" },
-  vscode: { file: "vscode.png", crop: { canvas: 128, inset: 13, size: 102 } },
+  vscode: { file: "vscode.svg" },
   windsurf: { file: "windsurf.svg" },
   kiro: { file: "kiro.svg" },
-  cline: { file: "cline.png" },
+  cline: { file: "cline.svg" },
   roo: { file: "roo.png" },
   "claude-desktop": claudeIcon,
 };
