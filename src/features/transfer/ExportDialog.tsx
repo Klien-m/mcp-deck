@@ -1,3 +1,5 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { useEffect, useRef, useState } from "react";
 import { save } from "@tauri-apps/plugin-dialog";
 import { Upload } from "lucide-react";
@@ -126,15 +128,15 @@ export function ExportDialog({
               ? "将包含完整参数与凭据，请妥善保存"
               : "默认导出脱敏模板，补齐隐藏值后使用"}
           </span>
-          <button onClick={close}>关闭</button>
-          <button
+          <Button variant="outline" onClick={close}>关闭</Button>
+          <Button variant="default"
             className="primary"
             disabled={busy || !transfer}
             onClick={download}
           >
             <Upload size={15} />
             保存文件
-          </button>
+          </Button>
         </>
       }
     >
@@ -153,11 +155,10 @@ export function ExportDialog({
         />
       </label>
       <label className="checkbox-line">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={secrets}
           disabled={saving || workspaceBusy}
-          onChange={(e) => setSecrets(e.target.checked)}
+          onCheckedChange={(checked) => setSecrets(checked === true)}
         />
         显示并导出完整配置（包含参数、环境变量与凭据）
       </label>

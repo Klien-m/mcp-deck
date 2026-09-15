@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { open } from "@tauri-apps/plugin-dialog";
 import { FolderOpen } from "lucide-react";
@@ -61,12 +63,12 @@ export function TargetEditor({
       onClose={() => !busy && onClose()}
       footer={
         <>
-          <button onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
             取消
-          </button>
-          <button form="target-editor" className="primary" disabled={busy}>
+          </Button>
+          <Button variant="default" form="target-editor" className="primary" disabled={busy}>
             保存目标
-          </button>
+          </Button>
         </>
       }
     >
@@ -96,7 +98,7 @@ export function TargetEditor({
         </label>
         <label>
           目标名称
-          <input
+          <Input
             required
             value={value.name}
             onChange={(e) => setValue({ ...value, name: e.target.value })}
@@ -105,15 +107,15 @@ export function TargetEditor({
         <label>
           配置文件路径
           <div className="input-row">
-            <input
+            <Input
               required
               value={value.path}
               onChange={(e) => setValue({ ...value, path: e.target.value })}
               placeholder="/完整路径/mcp.json"
             />
-            <button type="button" onClick={choose} aria-label="选择配置文件">
+            <Button variant="outline" type="button" onClick={choose} aria-label="选择配置文件">
               <FolderOpen size={17} />
-            </button>
+            </Button>
           </div>
         </label>
         <div className="callout">

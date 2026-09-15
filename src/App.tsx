@@ -1,3 +1,5 @@
+import { SettingsPage } from "./features/settings/SettingsPage";
+import { Button } from "@/components/ui/button";
 /** 工作区装配入口：组合数据操作、服务筛选与视图路由，不直接调用写入 IPC。 */
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
@@ -20,6 +22,7 @@ const emptyChanges: Change[] = [];
 
 /** 保存当前弹窗、通知和撤销入口；服务选择归 useServiceLibrary，持久化归 useWorkspace。 */
 export default function App() {
+  const [page, setPage] = useState<"workspace" | "settings">("workspace");
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [toast, setToast] = useState("");
   const [undo, setUndo] = useState("");
@@ -69,6 +72,7 @@ export default function App() {
     });
   return (
     <WorkspaceLayout
+      page={page}
       isolated={data.isolated}
       busy={busy}
       pendingCount={preview?.changes.length || 0}
@@ -81,13 +85,13 @@ export default function App() {
           {error && !activeView && (
             <div className="floating-error">
               <ErrorBox text={error} />
-              <button
+              <Button variant="ghost" size="icon-sm"
                 className="icon-button"
                 onClick={clearError}
                 aria-label="关闭错误"
               >
                 <X size={16} />
-              </button>
+              </Button>
             </div>
           )}
           {toast && (
@@ -95,14 +99,14 @@ export default function App() {
               <Check size={16} />
               {toast}
               {undo && (
-                <button
+                <Button variant="outline"
                   disabled={busy}
                   onClick={async () => {
                     if (await actions.remove(undo, true)) setUndo("");
                   }}
                 >
                   撤销移除
-                </button>
+                </Button>
               )}
             </div>
           )}
@@ -119,14 +123,16 @@ export default function App() {
             onView={show}
             onClearError={clearError}
             onServiceSaved={library.revealSaved}
-            onImported={() => library.setFilter("all")}
+            onImported={() => { library.setFilter("all"); setPage("workspace"); }}
           />
         </>
       }
     >
       <Sidebar
+        page={page}
+        onSettings={() => setPage("settings")}
         filter={library.filter}
-        onFilter={library.setFilter}
+        onFilter={(filter) => { library.setFilter(filter); setPage("workspace"); }}
         serviceCount={library.services.length}
         pendingCount={preview?.changes.length || 0}
         toolTargets={library.toolTargets}
@@ -136,6 +142,7 @@ export default function App() {
         onHistory={() => show({ type: "history" })}
         onTools={() => show({ type: "tools" })}
       />
+      {page === "settings" ? <SettingsPage onBack={() => setPage("workspace")} /> : <>
       <ServiceList
         visible={library.visible}
         selectedId={service?.id}
@@ -182,6 +189,7 @@ export default function App() {
           />
         )}
       </section>
+      </>}
     </WorkspaceLayout>
   );
 }

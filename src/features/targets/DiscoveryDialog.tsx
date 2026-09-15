@@ -1,3 +1,6 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, FolderSearch, Plug } from "lucide-react";
 import { request } from "../../api";
@@ -80,8 +83,8 @@ export function DiscoveryDialog({
       footer={
         <>
           <span className="muted grow">纳入管理不会修改目标文件</span>
-          <button onClick={close}>取消</button>
-          <button
+          <Button variant="outline" onClick={close}>取消</Button>
+          <Button variant="default"
             className="primary"
             disabled={busy || !chosenKeys.length}
             onClick={async () => {
@@ -91,7 +94,7 @@ export function DiscoveryDialog({
             }}
           >
             纳入管理 {chosenKeys.length ? `(${chosenKeys.length})` : ""}
-          </button>
+          </Button>
         </>
       }
     >
@@ -125,17 +128,11 @@ export function DiscoveryDialog({
             <label
               className={`discover-select-all ${!importableKeys.length ? "is-disabled" : ""}`}
             >
-              <input
-                type="checkbox"
-                checked={allChosen}
-                ref={(input) => {
-                  // indeterminate 是 DOM 属性，React 的 checked 只能表示全选／未全选。
-                  if (input)
-                    input.indeterminate = chosenKeys.length > 0 && !allChosen;
-                }}
+              <Checkbox
+                checked={allChosen ? true : chosenKeys.length ? "indeterminate" : false}
                 disabled={!importableKeys.length}
-                onChange={(e) =>
-                  setChosen(e.target.checked ? importableKeys : [])
+                onCheckedChange={(checked) =>
+                  setChosen(checked === true ? importableKeys : [])
                 }
               />
               全选可导入项
@@ -159,14 +156,12 @@ export function DiscoveryDialog({
                 className={`discover-item ${unsupported ? "is-unsupported" : d.managed ? "is-managed" : checked ? "is-selected" : ""}`}
                 key={d.key}
               >
-                <input
-                  type="checkbox"
+                <Checkbox
                   checked={checked}
                   disabled={unavailable}
-                  onChange={(e) => {
-                    const checked = e.target.checked;
+                  onCheckedChange={(checked) => {
                     setChosen((c) =>
-                      checked ? [...c, d.key] : c.filter((k) => k !== d.key),
+                      checked === true ? [...c, d.key] : c.filter((k) => k !== d.key),
                     );
                   }}
                 />
@@ -181,7 +176,7 @@ export function DiscoveryDialog({
                         : `${d.config?.transport} · 可导入`}
                   </small>
                 </div>
-                <span className="tag">
+                <Badge variant="secondary" className="tag">
                   {unsupported
                     ? "不支持"
                     : d.managed
@@ -189,7 +184,7 @@ export function DiscoveryDialog({
                       : checked
                         ? "已选择"
                         : "可导入"}
-                </span>
+                </Badge>
               </label>
             );
           })}

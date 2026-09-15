@@ -1,3 +1,5 @@
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useEffect, useRef } from "react";
 import { Plus, Plug, Search, Upload, X } from "lucide-react";
 import { ToolIcon } from "../../components";
@@ -42,7 +44,7 @@ export function ServiceList({
       if (
         (e.metaKey || e.ctrlKey) &&
         e.key.toLowerCase() === "k" &&
-        !document.querySelector("dialog[open]")
+        !document.querySelector('[role="dialog"][data-state="open"]')
       ) {
         e.preventDefault();
         search.current?.focus();
@@ -61,26 +63,26 @@ export function ServiceList({
             <small>{visible.length} 个</small>
           </h1>
           <div className="inline">
-            <button
+            <Button variant="ghost" size="icon-sm"
               className="icon-button"
               aria-label="导出服务库"
               onClick={() => onExport()}
               disabled={!serviceCount}
             >
               <Upload size={17} />
-            </button>
-            <button
+            </Button>
+            <Button variant="ghost" size="icon-sm"
               className="icon-button"
               aria-label="添加服务"
               onClick={() => onAdd()}
             >
               <Plus size={19} />
-            </button>
+            </Button>
           </div>
         </div>
         <div className="search">
           <Search size={16} />
-          <input
+          <Input
             ref={search}
             value={query}
             onChange={(e) => onQuery(e.target.value)}
@@ -88,13 +90,13 @@ export function ServiceList({
             aria-label="搜索 MCP 服务"
           />
           {query ? (
-            <button
+            <Button variant="ghost" size="icon-sm"
               className="icon-button"
               onClick={() => onQuery("")}
               aria-label="清除搜索"
             >
               <X size={14} />
-            </button>
+            </Button>
           ) : (
             <kbd>⌘ K</kbd>
           )}
@@ -106,7 +108,7 @@ export function ServiceList({
       </div>
       <div className="service-list">
         {visible.map((s) => (
-          <button
+          <Button variant="ghost"
             className={`service ${s.id === selectedId ? "selected" : ""}`}
             key={s.id}
             aria-pressed={s.id === selectedId}
@@ -136,7 +138,7 @@ export function ServiceList({
                 </span>
               </div>
             </div>
-          </button>
+          </Button>
         ))}
         {!visible.length && (
           <div className="list-empty">
@@ -151,9 +153,9 @@ export function ServiceList({
                     : "还没有分配服务"}
             </p>
             {filter !== "all" && (
-              <button className="text-button" onClick={() => onFilter("all")}>
+              <Button variant="ghost" className="text-button" onClick={() => onFilter("all")}>
                 查看全部服务
-              </button>
+              </Button>
             )}
           </div>
         )}

@@ -3,12 +3,12 @@
   font:
     10px/1.7 Menlo,
     monospace;
-  color: #8e9b80;
+  color: var(--muted-foreground);
   margin: -7px 0 20px;
   overflow-wrap: anywhere;
 }
 .discover-list {
-  border: 1px solid #dfe7d2;
+  border: 1px solid var(--border);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -20,24 +20,24 @@
   gap: 12px;
   flex-wrap: wrap;
   padding: 12px 15px;
-  background: #f4f6ee;
-  border-bottom: 1px solid #dfe7d2;
+  background: var(--muted);
+  border-bottom: 1px solid var(--border);
 }
 .discover-select-all {
   display: inline-flex;
   align-items: center;
   gap: 10px;
   margin: 0;
-  color: #465b36;
+  color: var(--foreground);
   cursor: pointer;
 }
 .discover-selection {
   font-size: 11px;
-  color: #707c65;
+  color: var(--foreground);
   font-variant-numeric: tabular-nums;
 }
 .discover-select-all.is-disabled {
-  color: #858b7e;
+  color: var(--muted-foreground);
   cursor: not-allowed;
 }
 .discover-item {
@@ -46,21 +46,21 @@
   gap: 13px;
   padding: 15px;
   margin: 0;
-  border-bottom: 1px solid #e6ecdd;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
 }
 .discover-item:last-child {
   border: none;
 }
-.discover-item > input,
-.discover-select-all > input {
-  width: 16px;
-  height: 16px;
-  padding: 0;
-  flex: 0 0 16px;
-  margin: 0;
-  accent-color: #6b8258;
-  cursor: inherit;
+.discover-item > [role="checkbox"],
+.discover-select-all > [role="checkbox"] {
+  width:16px;
+  height:16px;
+  padding:0;
+  flex:0 0 16px;
+  margin:0;
+  accent-color:var(--foreground);
+  cursor:inherit;
 }
 .discover-item > svg,
 .discover-item > .tag {
@@ -73,7 +73,7 @@
 .discover-item strong {
   font-size: 13px;
   font-weight: 500;
-  color: #465b36;
+  color: var(--foreground);
   overflow-wrap: anywhere;
 }
 .discover-item small {
@@ -81,45 +81,45 @@
   overflow-wrap: anywhere;
 }
 .discover-item:not(.is-unsupported):not(.is-managed):hover {
-  background: #f2f6eb;
+  background: var(--warning-bg);
 }
 .discover-item.is-selected {
-  background: #edf3e5;
+  background: var(--muted);
 }
 .discover-item.is-selected .tag {
-  background: #e0ebd4;
-  color: #465f34;
+  background: var(--secondary);
+  color: var(--foreground);
 }
 /* 不支持和已托管属于不同原因，使用独立视觉状态，不能混同为可选择项。 */
 .discover-item.is-unsupported {
-  background: #faf5eb;
-  box-shadow: inset 3px 0 #d9b67a;
+  background: var(--warning-bg);
+  box-shadow: inset 3px 0 var(--warning-border);
   cursor: not-allowed;
 }
 .discover-item.is-unsupported > svg {
-  color: #a17637;
+  color: var(--warning);
 }
 .discover-item.is-unsupported strong {
-  color: #756448;
+  color: var(--warning);
 }
 .discover-item.is-unsupported small {
-  color: #897452;
+  color: var(--warning);
 }
 .discover-item.is-unsupported .tag {
-  background: #efe0c5;
-  color: #805b24;
+  background: var(--warning-bg);
+  color: var(--warning);
 }
 .discover-item.is-managed {
-  background: #f4f5f0;
+  background: var(--muted);
   cursor: not-allowed;
 }
 .discover-item.is-managed strong,
 .discover-item.is-managed > svg {
-  color: #7a8472;
+  color: var(--muted-foreground);
 }
 /* 路径列表允许长绝对路径换行，避免挤压设置和发现操作。 */
 .tools-list {
-  border: 1px solid #e0e7d5;
+  border: 1px solid var(--border);
   border-radius: 7px;
   overflow: hidden;
 }
@@ -128,7 +128,7 @@
   align-items: center;
   gap: 10px;
   padding: 15px 12px;
-  border-bottom: 1px solid #e7ecdf;
+  border-bottom: 1px solid var(--border);
 }
 .tool-setting:last-child {
   border: none;
@@ -150,14 +150,14 @@
 .tool-setting code {
   display: block;
   font-size: 10px;
-  color: #8b9a7c;
+  color: var(--muted-foreground);
   margin-top: 7px;
   overflow-wrap: anywhere;
 }
 .tool-setting small {
   display: block;
   font-size: 10px;
-  color: #a0ab94;
+  color: var(--muted-foreground);
   margin-top: 5px;
 }
 .tool-setting > button {
@@ -170,7 +170,7 @@
   display: flex;
   align-items: center;
   gap: 14px;
-  color: #60794b;
+  color: var(--foreground);
 }
 .onboarding-intro > svg {
   flex-shrink: 0;
@@ -192,7 +192,7 @@
   flex-wrap: wrap;
   margin: 20px 0 12px;
   font-size: 12px;
-  color: #707c65;
+  color: var(--foreground);
 }
 .onboarding-summary button {
   font-size: 11px;
@@ -203,9 +203,9 @@
 .onboarding-path {
   margin: 0;
   padding: 10px 15px;
-  border-bottom: 1px solid #e6ecdd;
+  border-bottom: 1px solid var(--border);
   font: 10px/1.7 Menlo, monospace;
-  color: #8e9b80;
+  color: var(--muted-foreground);
   overflow-wrap: anywhere;
 }
 .onboarding-read-error {
@@ -213,8 +213,8 @@
   align-items: flex-start;
   gap: 8px;
   padding: 12px 15px;
-  background: #faf5eb;
-  color: #805b24;
+  background: var(--warning-bg);
+  color: var(--warning);
   font-size: 12px;
   overflow-wrap: anywhere;
 }

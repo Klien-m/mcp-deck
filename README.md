@@ -6,7 +6,7 @@
 
 ## 立即试用
 
-从 [GitHub Releases](https://github.com/Klien-m/mcp-deck/releases) 下载对应平台的安装包：Windows x64 提供 `.exe` / `.msi`，macOS Apple Silicon / Intel 各提供 `.dmg`，Linux x64 提供 `.deb` / `.rpm` / `.AppImage`。macOS 最低系统版本配置为 12，打开 DMG 后将 `MCP Deck.app` 拖入应用程序目录。实际验收系统见 [验证记录](docs/VALIDATION.md)。
+从 [GitHub Releases](https://github.com/Klien-m/mcp-deck/releases) 下载对应平台的安装包：Windows x64 提供 `.exe` / `.msi`，macOS Apple Silicon / Intel 各提供 `.dmg`，Linux x64 提供 `.deb` / `.rpm` / `.AppImage`。macOS 最低系统版本配置为 13.3（Ventura），打开 DMG 后将 `MCP Deck.app` 拖入应用程序目录。实际验收系统见 [验证记录](docs/VALIDATION.md)。
 
 1. 首次启动自动扫描本机工具的 MCP 配置，按工具或逐项勾选后纳入服务库；可跳过，之后通过「发现本机配置」继续。此步骤只读取原配置，完成或跳过后不再自动弹出。
 2. 编辑服务，打开要分配到的工具开关。修改先保存在服务库。
@@ -52,6 +52,7 @@ npm run tauri dev
 
 ```bash
 npm run check
+npm run test:ui
 npm test
 npm run tauri build -- --bundles app
 ```

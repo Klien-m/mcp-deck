@@ -1,6 +1,9 @@
-/** 无业务状态的公共展示组件；Modal 只负责原生弹窗与焦点，操作忙碌规则由调用方控制。 */
-import { useEffect, useRef, type ReactNode } from "react";
+import { Button } from "@/components/ui/button";
+/** 无业务状态的公共展示组件；Modal 只负责弹窗与焦点，操作忙碌规则由调用方控制。 */
+import { useRef, type ReactNode } from "react";
 import { X, Layers } from "lucide-react";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 type ToolIconAsset = {
   file: string;
   crop?: { canvas: number; inset: number; size: number };
@@ -52,8 +55,8 @@ export function ToolIcon({
   );
 }
 /**
- * 挂载时进入原生 dialog 顶层，卸载后尝试把焦点还给仍存在的触发元素。
- * Escape 先阻止浏览器直接关闭，再交给 onClose 判断是否允许，避免绕过保存期间保护。
+ * Radix 管理模态层与焦点，卸载后尝试把焦点还给仍存在的触发元素。
+ * 关闭请求交给 onClose 判断是否允许，避免绕过保存期间保护。
  */
 export function Modal({
   title,
@@ -68,41 +71,33 @@ export function Modal({
   onClose: () => void;
   wide?: boolean;
 }) {
-  const ref = useRef<HTMLDialogElement>(null);
-  const returnFocus = useRef<HTMLElement | null>(null);
-  useEffect(() => {
-    returnFocus.current = document.activeElement as HTMLElement;
-    ref.current?.showModal();
-    return () => {
-      returnFocus.current?.isConnected && returnFocus.current.focus();
-    };
-  }, []);
+  const returnFocus = useRef(document.activeElement as HTMLElement | null);
   return (
-    <dialog
-      ref={ref}
-      className={wide ? "wide" : ""}
-      onCancel={(e) => {
-        e.preventDefault();
-        onClose();
-      }}
-    >
-      <div className="modal-head">
-        <h2>{title}</h2>
-        <button className="icon-button" aria-label="关闭弹窗" onClick={onClose}>
-          <X size={18} />
-        </button>
-      </div>
-      <div className="modal-body">{children}</div>
-      {footer && <div className="modal-footer">{footer}</div>}
-    </dialog>
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        className={`deck-dialog ${wide ? "wide" : ""}`}
+        showCloseButton={false}
+        aria-describedby={undefined}
+        onInteractOutside={(event) => event.preventDefault()}
+        onCloseAutoFocus={(event) => {
+          event.preventDefault();
+          if (returnFocus.current?.isConnected) returnFocus.current.focus();
+        }}
+      >
+        <div className="modal-head">
+          <DialogTitle>{title}</DialogTitle>
+          <Button variant="ghost" size="icon-sm" className="icon-button" aria-label="关闭弹窗" onClick={onClose}><X size={18} /></Button>
+        </div>
+        <div className="modal-body">{children}</div>
+        {footer && <div className="modal-footer">{footer}</div>}
+      </DialogContent>
+    </Dialog>
   );
 }
 /** 空错误不占位，非空内容使用 alert 语义通知辅助技术。 */
 export function ErrorBox({ text }: { text: string }) {
   return text ? (
-    <div className="error-box" role="alert">
-      {text}
-    </div>
+    <Alert variant="destructive" className="error-box"><AlertDescription>{text}</AlertDescription></Alert>
   ) : null;
 }
 /** 以文本展示字符串或格式化 JSON；React 负责转义，不把配置内容当 HTML 执行。 */

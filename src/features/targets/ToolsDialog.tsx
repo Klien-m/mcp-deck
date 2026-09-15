@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { Plus } from "lucide-react";
 import { ErrorBox, Modal, ToolIcon } from "../../components";
 import type { Adapter, Target, TargetStatus } from "../../types";
@@ -31,17 +32,17 @@ export function ToolsDialog({
           <span className="muted grow">
             {targets.length} 个配置目标 · 路径可自定义
           </span>
-          <button
+          <Button variant="outline"
             onClick={() => {
               onEdit(null);
             }}
           >
             <Plus size={16} />
             添加配置目标
-          </button>
-          <button className="primary" onClick={close}>
+          </Button>
+          <Button variant="default" className="primary" onClick={close}>
             完成
-          </button>
+          </Button>
         </>
       }
     >
@@ -68,19 +69,19 @@ export function ToolsDialog({
               <code>{t.path}</code>
               <small>{t.error || adapter(t.adapterId).note}</small>
             </div>
-            <button
+            <Button variant="outline"
               onClick={() => {
                 onEdit(t);
               }}
             >
               设置
-            </button>
-            <button
+            </Button>
+            <Button variant="outline"
               disabled={!t.exists || !!t.error}
               onClick={() => onDiscover(t.id)}
             >
               发现
-            </button>
+            </Button>
           </div>
         ))}
       </div>

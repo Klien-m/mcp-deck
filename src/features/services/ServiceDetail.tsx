@@ -1,3 +1,7 @@
+import { Switch } from "@/components/ui/switch";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef, useState } from "react";
 import { Plug, Trash2, ShieldCheck } from "lucide-react";
 import { request } from "../../api";
@@ -90,8 +94,8 @@ export function ServiceDetail({
           </div>
         </div>
         <div className="inline">
-          <button onClick={() => onExport([service.id])}>导出</button>
-          <button
+          <Button variant="outline" onClick={() => onExport([service.id])}>导出</Button>
+          <Button variant="ghost" size="icon-sm"
             className="icon-button danger"
             aria-label={`移除 ${service.name}`}
             disabled={busy}
@@ -100,42 +104,24 @@ export function ServiceDetail({
             }}
           >
             <Trash2 size={17} />
-          </button>
+          </Button>
         </div>
       </div>
-      <div className="tabs" role="tablist">
-        <button
-          role="tab"
-          aria-selected={tab === "overview"}
-          className={tab === "overview" ? "active" : ""}
-          onClick={() => setTab("overview")}
-        >
-          概览
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "json"}
-          className={tab === "json" ? "active" : ""}
-          onClick={() => setTab("json")}
-        >
-          配置 JSON
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === "checks"}
-          className={tab === "checks" ? "active" : ""}
-          onClick={() => checkService()}
-        >
-          配置检查
-        </button>
-      </div>
-      {tab === "overview" ? (
-        <>
+      <Tabs value={tab} onValueChange={(next) => {
+        if (next === "checks") void checkService();
+        else setTab(next);
+      }}>
+        <TabsList className="detail-tabs" aria-label="服务信息">
+          <TabsTrigger value="overview">概览</TabsTrigger>
+          <TabsTrigger value="json">配置 JSON</TabsTrigger>
+          <TabsTrigger value="checks">配置检查</TabsTrigger>
+        </TabsList>
+        <TabsContent value="overview">
           <div className="section-heading">
             <h3>服务配置</h3>
-            <button className="text-button" onClick={() => onEdit(service)}>
+            <Button variant="ghost" className="text-button" onClick={() => onEdit(service)}>
               编辑配置
-            </button>
+            </Button>
           </div>
           <div className="settings">
             <div>
@@ -145,11 +131,11 @@ export function ServiceDetail({
             <div>
               <span>传输方式</span>
               <strong>
-                <span className="tag">
+                <Badge variant="secondary" className="tag">
                   {service.config.transport === "http"
                     ? "Streamable HTTP"
                     : service.config.transport}
-                </span>
+                </Badge>
               </strong>
             </div>
             <div>
@@ -197,13 +183,11 @@ export function ServiceDetail({
                                 : "未发现配置 · 应用时创建文件"}
                     </small>
                   </div>
-                  <button
-                    role="switch"
-                    aria-checked={checked}
+                  <Switch
+                    checked={checked}
                     aria-label={`${service.name} 分配到 ${t.name}`}
-                    className="switch"
                     disabled={busy || (!compatible && !checked)}
-                    onClick={() => onAssign(t.id, !checked)}
+                    onCheckedChange={(enabled) => void onAssign(t.id, enabled)}
                   />
                 </div>
               );
@@ -213,14 +197,13 @@ export function ServiceDetail({
             <ShieldCheck size={15} />
             分配控制配置文件中的服务条目。客户端可能仍需刷新、授权或受项目配置覆盖。
           </p>
-        </>
-      ) : tab === "json" ? (
-        <>
+        </TabsContent>
+        <TabsContent value="json">
           <div className="section-heading">
             <h3>服务公共配置</h3>
-            <button className="text-button" onClick={() => onEdit(service)}>
+            <Button variant="ghost" className="text-button" onClick={() => onEdit(service)}>
               编辑完整配置
-            </button>
+            </Button>
           </div>
           <p className="hint">
             环境变量、请求头已隐藏。导出时选择目标工具，会转换为对应格式。
@@ -236,14 +219,13 @@ export function ServiceDetail({
               ),
             }}
           />
-        </>
-      ) : (
-        <>
+        </TabsContent>
+        <TabsContent value="checks">
           <div className="section-heading">
             <h3>配置检查</h3>
-            <button className="text-button" onClick={() => checkService()}>
+            <Button variant="ghost" className="text-button" onClick={() => checkService()}>
               重新检查
-            </button>
+            </Button>
           </div>
           {checkError ? (
             <ErrorBox text={checkError} />
@@ -267,8 +249,8 @@ export function ServiceDetail({
           ) : (
             <p className="muted">正在检查…</p>
           )}
-        </>
-      )}
+        </TabsContent>
+      </Tabs>
     </>
   );
 }

@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import {
   ArrowLeft,
   ArrowRight,
@@ -31,13 +32,13 @@ export function Startup({
               ? "工作区加载失败时，原配置不会被覆盖。"
               : "网页没有本机配置权限。开发时运行 npm run tauri dev。"}
           </p>
-          <button
+          <Button variant="outline"
             onClick={() => {
               onRetry();
             }}
           >
             重新加载
-          </button>
+          </Button>
         </>
       )}
     </main>
@@ -71,15 +72,15 @@ export function EmptyWorkspace({
         每一次修改，都可以先预览再应用。
       </p>
       <div className="welcome-actions">
-        <button className="primary" onClick={() => onDiscover()}>
+        <Button variant="default" className="primary" onClick={() => onDiscover()}>
           <FolderSearch size={17} />
           发现本机配置
           <ArrowRight size={16} />
-        </button>
-        <button onClick={() => onAdd()}>
+        </Button>
+        <Button variant="outline" onClick={() => onAdd()}>
           <Plus size={17} />
           添加服务
-        </button>
+        </Button>
       </div>
       <div className="welcome-tools">
         {adapters.map((a) => (
@@ -90,10 +91,10 @@ export function EmptyWorkspace({
         已内置 {adapters.length} 种适配器 · 本地配置管理
       </span>
       {filter !== "all" && (
-        <button className="text-button" onClick={() => onShowAll()}>
+        <Button variant="ghost" className="text-button" onClick={() => onShowAll()}>
           <ArrowLeft size={14} />
           返回全部服务
-        </button>
+        </Button>
       )}
     </div>
   );

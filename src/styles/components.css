@@ -1,4 +1,4 @@
-/* 共享组件：工具图标、提示、原生弹窗、表单及代码块。功能特例在各功能样式中覆盖。 */
+/* 共享组件：工具图标、提示、弹窗、表单及代码块。功能特例在各功能样式中覆盖。 */
 .tool-icon {
   height: 26px;
   width: 26px;
@@ -6,7 +6,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  color: #414e38;
+  color: var(--foreground);
 }
 .tool-icon-art {
   display: block;
@@ -21,7 +21,7 @@
 }
 .hint {
   font-size: 11px;
-  color: #939f85;
+  color: var(--muted-foreground);
   line-height: 1.8;
   margin-top: 13px;
   display: flex;
@@ -33,29 +33,9 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
-/* 原生对话框保留浏览器的模态与顶层行为，内容区独立滚动，页脚保持可操作。 */
-dialog {
-  width: min(560px, calc(100vw - 60px));
-  max-height: calc(100dvh - 50px);
-  padding: 0;
-  border: 1px solid #dfe6d5;
-  border-radius: 12px;
-  background: #fcfdf9;
-  color: #445339;
-  box-shadow: 0 20px 100px #1c2d1635;
-  overflow: hidden;
-}
-dialog[open] {
-  display: flex;
-  flex-direction: column;
-}
-dialog::backdrop {
-  background: #27351e45;
-  backdrop-filter: blur(3px);
-}
-dialog.wide {
-  width: min(850px, calc(100vw - 60px));
-}
+/* Radix 管理焦点与模态层，内容区滚动，底部操作保持可见。 */
+.deck-dialog { display: flex; flex-direction: column; gap: 0; padding: 0; width: min(560px, calc(100vw - 60px)); max-width: none; max-height: calc(100dvh - 50px); overflow: hidden; color: var(--foreground); }
+.deck-dialog.wide { width: min(850px, calc(100vw - 60px)); }
 .modal-head {
   display: flex;
   align-items: center;
@@ -63,7 +43,7 @@ dialog.wide {
   padding: 19px 24px;
   border-bottom: 1px solid var(--line);
   flex-shrink: 0;
-  background: #fcfdf9;
+  background: var(--card);
   z-index: 2;
 }
 .modal-head h2 {
@@ -74,7 +54,7 @@ dialog.wide {
 .modal-head .icon-button {
   border: none;
   background: transparent;
-  color: #8d9981;
+  color: var(--muted-foreground);
 }
 .modal-body {
   padding: 23px 24px;
@@ -88,7 +68,7 @@ dialog.wide {
   justify-content: flex-end;
   gap: 9px;
   flex-shrink: 0;
-  background: #f6f8f0;
+  background: var(--muted);
   border-top: 1px solid var(--line);
   padding: 16px 24px;
   z-index: 2;
@@ -100,20 +80,20 @@ dialog.wide {
 label {
   display: block;
   font-size: 12px;
-  color: #7e8c70;
+  color: var(--muted-foreground);
   margin-bottom: 17px;
 }
-label > input,
+label > input:not([type="checkbox"]),
 label > select,
 label > textarea,
 label > .input-row,
 label > .deck-select {
-  display: block;
-  margin-top: 7px;
+  display:block;
+  margin-top:7px;
 }
 label small {
   display: block;
-  color: #939e85;
+  color: var(--muted-foreground);
   font-size: 11px;
   margin-top: 6px;
   line-height: 1.7;
@@ -128,20 +108,20 @@ label small {
 }
 .optional {
   font-size: 10px;
-  color: #a1aa96;
+  color: var(--muted-foreground);
   margin-left: 5px;
 }
 .form-note {
   font-size: 11px;
-  color: #8b977d;
+  color: var(--muted-foreground);
   line-height: 1.8;
   padding: 12px 14px;
-  background: #f0f4e8;
+  background: var(--muted);
   border-radius: 6px;
 }
 .intro {
   font-size: 12px;
-  color: #839276;
+  color: var(--muted-foreground);
   line-height: 1.8;
   margin-bottom: 17px;
 }
@@ -157,8 +137,8 @@ label small {
   flex-shrink: 0;
 }
 .callout {
-  background: #f1f6e8;
-  border: 1px solid #dce7cb;
+  background: var(--muted);
+  border: 1px solid var(--border);
   padding: 17px;
   border-radius: 8px;
   margin-bottom: 17px;
@@ -170,12 +150,12 @@ label small {
 .callout p {
   font-size: 12px;
   margin-top: 8px;
-  color: #879773;
+  color: var(--muted-foreground);
   line-height: 1.7;
 }
 .callout.warn {
-  background: #fbf6e9;
-  border-color: #e9ddbe;
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
 }
 /* 配置仅作为预格式化文本展示；长行可换行，长内容在代码块内部滚动。 */
 .code {
@@ -183,8 +163,8 @@ label small {
     11px/1.8 Menlo,
     Consolas,
     monospace;
-  background: #f2f5ea;
-  border: 1px solid #dfe7d2;
+  background: var(--muted);
+  border: 1px solid var(--border);
   border-radius: 6px;
   white-space: pre-wrap;
   overflow-wrap: anywhere;
@@ -192,7 +172,7 @@ label small {
   padding: 15px;
   max-height: 400px;
   overflow: auto;
-  color: #6b7c59;
+  color: var(--foreground);
   margin: 0;
 }
 /* 独立确认类复选框；发现列表的选择样式由 targets.css 管理。 */
@@ -203,19 +183,19 @@ label small {
   font-size: 12px;
   margin: 16px 0;
 }
-.checkbox-line input {
-  width: 15px;
-  height: 15px;
-  margin: 0;
-  accent-color: #6d8459;
+.checkbox-line [role="checkbox"] {
+  width:15px;
+  height:15px;
+  margin:0;
+  accent-color:var(--foreground);
 }
 .empty-card {
   padding: 40px 20px;
   text-align: center;
-  border: 1px dashed #d7e3c7;
+  border: 1px dashed var(--border);
   border-radius: 8px;
-  color: #a0ad91;
-  background: #f9fbf4;
+  color: var(--muted-foreground);
+  background: var(--muted);
 }
 .empty-card svg {
   margin-bottom: 12px;
@@ -223,16 +203,16 @@ label small {
 .empty-card h3 {
   font-size: 14px;
   font-weight: 400;
-  color: #6a7e56;
+  color: var(--foreground);
   margin-bottom: 9px;
 }
 .empty-card p {
   font-size: 12px;
 }
 .error-box {
-  border: 1px solid #e3c5ab;
-  background: #fff3e6;
-  color: #a2683a;
+  border: 1px solid var(--border);
+  background: var(--muted);
+  color: var(--foreground);
   border-radius: 6px;
   padding: 12px 14px;
   font-size: 12px;
@@ -240,3 +220,10 @@ label small {
   margin-bottom: 16px;
   overflow-wrap: anywhere;
 }
+
+.dark .tool-icon-art { filter: brightness(0.9); }
+.dark .tool-icon { background: #e4e4e7; border-radius: 5px; padding: 3px; }
+.dark .tool-icon.small { border-radius: 3px; padding: 1px; }
+.error-box { background: var(--error-bg); color: var(--destructive); border-color: var(--destructive); }
+.error-box [data-slot="alert-description"] { color: inherit; }
+label small, .hint { font-size: 12px; }

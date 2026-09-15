@@ -1,3 +1,6 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useEffect, useState } from "react";
 import { AlertTriangle, FolderSearch, Plug, RefreshCw } from "lucide-react";
 import { request } from "../../api";
@@ -77,18 +80,18 @@ export function OnboardingDialog({
           <span className="muted grow" role="status" aria-live="polite">
             已选 {selections.length} 个工具 · {selectedCount} 个 MCP
           </span>
-          <button disabled={workspaceBusy} onClick={() => void complete([])}>
+          <Button variant="outline" disabled={workspaceBusy} onClick={() => void complete([])}>
             {!loading && !results.length && !localError
               ? "进入工作区"
               : "暂时跳过"}
-          </button>
-          <button
+          </Button>
+          <Button variant="default"
             className="primary"
             disabled={busy || !selectedCount}
             onClick={() => void complete(selections)}
           >
             纳入管理{selectedCount ? ` (${selectedCount})` : ""}
-          </button>
+          </Button>
         </>
       }
     >
@@ -111,7 +114,7 @@ export function OnboardingDialog({
               ? "扫描未完成，请重试"
               : `发现 ${toolCount} 个工具，共 ${serviceCount} 个 MCP`}
         </span>
-        <button
+        <Button variant="outline"
           disabled={busy}
           onClick={() => {
             onClearError();
@@ -121,7 +124,7 @@ export function OnboardingDialog({
         >
           <RefreshCw size={13} />
           重新扫描
-        </button>
+        </Button>
       </div>
       {!loading && !localError && !results.length && (
         <div className="empty-card">
@@ -148,18 +151,12 @@ export function OnboardingDialog({
                 <label
                   className={`discover-select-all ${!keys.length ? "is-disabled" : ""}`}
                 >
-                  <input
-                    type="checkbox"
+                  <Checkbox
                     aria-label={`选择 ${target.name} 的全部可导入 MCP`}
-                    checked={allSelected}
-                    ref={(input) => {
-                      if (input)
-                        input.indeterminate =
-                          selected.length > 0 && !allSelected;
-                    }}
+                    checked={allSelected ? true : selected.length ? "indeterminate" : false}
                     disabled={busy || !keys.length}
-                    onChange={(e) => {
-                      const next = e.target.checked ? keys : [];
+                    onCheckedChange={(checked) => {
+                      const next = checked === true ? keys : [];
                       setChosen((current) => ({
                         ...current,
                         [target.id]: next,
@@ -188,12 +185,11 @@ export function OnboardingDialog({
                     className={`discover-item ${unsupported ? "is-unsupported" : item.managed ? "is-managed" : checked ? "is-selected" : ""}`}
                     key={item.key}
                   >
-                    <input
-                      type="checkbox"
+                    <Checkbox
                       checked={checked}
                       disabled={busy || !canAdopt(item)}
-                      onChange={(e) => {
-                        const next = e.target.checked;
+                      onCheckedChange={(checked) => {
+                        const next = checked === true;
                         setChosen((current) => ({
                           ...current,
                           [target.id]: next
@@ -219,7 +215,7 @@ export function OnboardingDialog({
                             : `${item.config?.transport} · 可导入`}
                       </small>
                     </div>
-                    <span className="tag">
+                    <Badge variant="secondary" className="tag">
                       {unsupported
                         ? "不支持"
                         : item.managed
@@ -227,7 +223,7 @@ export function OnboardingDialog({
                           : checked
                             ? "已选择"
                             : "可导入"}
-                    </span>
+                    </Badge>
                   </label>
                 );
               })}

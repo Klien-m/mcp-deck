@@ -13,7 +13,7 @@
   justify-content: space-between;
   align-items: center;
   padding: 0 20px;
-  background: #f2f4ed;
+  background: var(--muted);
 }
 .topbar-title {
   font-size: 12px;
@@ -21,13 +21,13 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #77816e;
+  color: var(--muted-foreground);
 }
 .version-chip {
   padding-left: 12px;
-  border-left: 1px solid #d8dfd1;
+  border-left: 1px solid var(--border);
   font-size: 10px;
-  color: #8b9382;
+  color: var(--muted-foreground);
 }
 .toolbar {
   display: flex;
@@ -48,7 +48,7 @@
 /* 侧栏将工具导航与底部操作分开，工具项允许独立滚动。 */
 .sidebar {
   border-right: 1px solid var(--line);
-  background: #f1f3ed;
+  background: var(--muted);
   padding: 26px 12px 8px;
   display: flex;
   flex-direction: column;
@@ -65,7 +65,7 @@
 }
 .brand-mark {
   display: flex;
-  color: #7a8972;
+  color: var(--muted-foreground);
 }
 .brand-mark img {
   display: block;
@@ -76,7 +76,7 @@
 .nav-label {
   text-transform: uppercase;
   font-size: 11px;
-  color: #939c89;
+  color: var(--muted-foreground);
   margin: 0 11px 8px;
   letter-spacing: 0.8px;
 }
@@ -90,7 +90,7 @@
   border-radius: 6px;
   justify-content: flex-start;
   padding: 9px 11px;
-  color: #6f7966;
+  color: var(--foreground);
   font-size: 13px;
   text-align: left;
   margin-bottom: 2px;
@@ -102,21 +102,21 @@
 .nav small {
   margin-left: auto;
   font-size: 11px;
-  color: #8b9384;
+  color: var(--muted-foreground);
 }
 .nav svg {
   flex-shrink: 0;
 }
 .nav.active {
-  background: #e1e7d7;
-  color: #3f5532;
+  background: var(--secondary);
+  color: var(--foreground);
   font-weight: 500;
 }
 .nav.active small {
-  color: #69815b;
+  color: var(--foreground);
 }
 .nav:hover:not(:disabled) {
-  background: #e7ecdf;
+  background: var(--secondary);
   border-color: transparent;
 }
 .target-label {
@@ -129,7 +129,7 @@
 .target-label .icon-button {
   border: none;
   background: none;
-  color: #7c896e;
+  color: var(--muted-foreground);
 }
 .tool-nav {
   overflow: auto;
@@ -141,7 +141,7 @@
   min-height: 37px;
 }
 .sidebar-bottom {
-  border-top: 1px solid #e1e5dc;
+  border-top: 1px solid var(--border);
   margin-top: 14px;
   padding-top: 10px;
   flex-shrink: 0;
@@ -155,7 +155,7 @@
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #8a957f;
+  color: var(--muted-foreground);
   font-size: 11px;
   padding: 13px 11px 5px;
 }
@@ -174,9 +174,9 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: #eaf0df;
-  border: 1px solid #d7e1c8;
-  color: #869977;
+  background: var(--secondary);
+  border: 1px solid var(--border);
+  color: var(--muted-foreground);
   height: 72px;
   width: 72px;
   border-radius: 18px;
@@ -185,7 +185,7 @@
 .eyebrow {
   font-size: 11px;
   letter-spacing: 1px;
-  color: #8a9a7b;
+  color: var(--muted-foreground);
   margin-bottom: 12px;
 }
 .welcome h2 {
@@ -196,7 +196,7 @@
 }
 .welcome p {
   font-size: 14px;
-  color: #8b977e;
+  color: var(--muted-foreground);
   line-height: 1.9;
 }
 .welcome-actions {
@@ -224,9 +224,9 @@
   align-items: center;
   padding: 0 19px;
   font-size: 10px;
-  color: #89957b;
+  color: var(--muted-foreground);
   border-top: 1px solid var(--line);
-  background: #f1f4e9;
+  background: var(--muted);
   flex-shrink: 0;
   gap: 20px;
 }
@@ -257,23 +257,23 @@
   left: 50%;
   transform: translateX(-50%);
   z-index: 10;
-  background: #3b4e2e;
-  color: #f3f8ec;
-  border: 1px solid #576e48;
+  background: var(--secondary);
+  color: var(--muted-foreground);
+  border: 1px solid var(--border);
   border-radius: 8px;
   padding: 13px 18px;
   display: flex;
   align-items: center;
   gap: 10px;
   font-size: 12px;
-  box-shadow: 0 8px 26px #384d2925;
+  box-shadow: 0 8px 26px #00000020;
   max-width: 85vw;
 }
 .toast button {
   border: none;
   padding: 0 0 0 8px;
   background: none;
-  color: #edf7e3;
+  color: var(--muted-foreground);
   text-decoration: underline;
   font-size: 12px;
 }
@@ -298,3 +298,13 @@
   width: 48px;
   height: 48px;
 }
+
+.topbar { background: var(--window-background); height: 52px; }
+.sidebar { background: var(--sidebar); }
+.nav.active { background: var(--background); box-shadow: 0 1px 3px #00000008; color: var(--foreground); }
+.nav.active:hover:not(:disabled) { background: var(--accent); }
+.nav.active small { color: var(--foreground); }
+.nav { height: auto; min-height: 37px; }
+.statusbar { background: var(--sidebar); }
+.toast { background: var(--foreground); color: var(--background); border-color: var(--border); }
+.toast button { color: inherit; }

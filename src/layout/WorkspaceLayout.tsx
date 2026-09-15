@@ -1,8 +1,10 @@
+import { Button } from "@/components/ui/button";
 import type { ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
 /** 固定外壳：顶部操作栏、三栏内容、底部状态及覆盖层；业务内容由插槽传入。 */
 export function WorkspaceLayout({
+  page,
   children,
   overlays,
   isolated,
@@ -13,6 +15,7 @@ export function WorkspaceLayout({
   onRefresh,
   onPreview,
 }: {
+  page: "workspace" | "settings";
   children: ReactNode;
   overlays: ReactNode;
   isolated: boolean;
@@ -33,7 +36,7 @@ export function WorkspaceLayout({
           <span className="muted">
             {isolated ? "隔离测试工作区" : "本机工作区"}
           </span>
-          <button
+          <Button variant="ghost" size="icon-sm"
             className="icon-button"
             title="刷新磁盘状态"
             aria-label="刷新磁盘状态"
@@ -41,14 +44,14 @@ export function WorkspaceLayout({
             onClick={() => onRefresh()}
           >
             <RefreshCw size={16} className={busy ? "spin" : ""} />
-          </button>
-          <button className="primary" disabled={busy} onClick={onPreview}>
+          </Button>
+          <Button variant="default" className="primary" disabled={busy} onClick={onPreview}>
             <RefreshCw size={14} />
             同步预览 <span className="count-badge">{pendingCount}</span>
-          </button>
+          </Button>
         </div>
       </header>
-      <main className="columns">{children}</main>
+      <main className={`columns ${page === "settings" ? "settings-layout" : ""}`}>{children}</main>
       <footer className="statusbar">
         <span>
           <span className="dot" />

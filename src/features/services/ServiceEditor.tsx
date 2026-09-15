@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Modal, ErrorBox } from "../../components";
 import { Select } from "../../Select";
@@ -82,12 +85,12 @@ export function ServiceEditor({
           <span className="muted grow">
             保存到服务库后，预览并应用到目标工具
           </span>
-          <button onClick={onClose} disabled={busy}>
+          <Button variant="outline" onClick={onClose} disabled={busy}>
             取消
-          </button>
-          <button className="primary" form="editor" disabled={busy}>
+          </Button>
+          <Button variant="default" className="primary" form="editor" disabled={busy}>
             {busy ? "正在保存…" : "保存服务"}
-          </button>
+          </Button>
         </>
       }
     >
@@ -96,7 +99,7 @@ export function ServiceEditor({
         <div className="form-grid">
           <label>
             显示名称
-            <input
+            <Input
               autoFocus
               value={name}
               required
@@ -111,7 +114,7 @@ export function ServiceEditor({
           </label>
           <label>
             配置键
-            <input
+            <Input
               value={key}
               required
               disabled={!!service}
@@ -123,7 +126,7 @@ export function ServiceEditor({
           </label>
           <label className="full">
             功能描述
-            <input
+            <Input
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               placeholder="这个服务能帮助你完成什么？"
@@ -148,7 +151,7 @@ export function ServiceEditor({
             <>
               <label className="full">
                 启动命令
-                <input
+                <Input
                   required
                   value={config.command}
                   onChange={(e) => change({ command: e.target.value })}
@@ -158,7 +161,7 @@ export function ServiceEditor({
               </label>
               <label className="full">
                 启动参数
-                <textarea
+                <Textarea
                   rows={4}
                   value={args}
                   onChange={(e) => setArgs(e.target.value)}
@@ -168,7 +171,7 @@ export function ServiceEditor({
               </label>
               <label className="full">
                 工作目录 <span className="optional">可选</span>
-                <input
+                <Input
                   value={config.cwd}
                   onChange={(e) => change({ cwd: e.target.value })}
                   placeholder="只用于声明支持 cwd 的工具"
@@ -176,7 +179,7 @@ export function ServiceEditor({
               </label>
               <label className="full">
                 环境变量
-                <textarea
+                <Textarea
                   rows={3}
                   value={env}
                   onChange={(e) => setEnv(e.target.value)}
@@ -189,7 +192,7 @@ export function ServiceEditor({
             <>
               <label className="full">
                 服务地址
-                <input
+                <Input
                   required
                   value={config.url}
                   onChange={(e) => change({ url: e.target.value })}
@@ -199,7 +202,7 @@ export function ServiceEditor({
               </label>
               <label className="full">
                 请求头
-                <textarea
+                <Textarea
                   rows={5}
                   value={headers}
                   onChange={(e) => setHeaders(e.target.value)}

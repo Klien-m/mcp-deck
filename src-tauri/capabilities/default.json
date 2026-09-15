@@ -1,1 +1,1 @@
-{"identifier":"main","description":"Local MCP configuration workbench","windows":["main"],"permissions":["core:default","dialog:allow-open","dialog:allow-save"]}
+{"identifier":"main","description":"Local MCP configuration workbench","windows":["main"],"permissions":["core:default","core:window:allow-set-theme","core:window:allow-set-background-color","dialog:allow-open","dialog:allow-save"]}

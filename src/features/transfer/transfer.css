@@ -10,7 +10,7 @@
   align-items: center;
   gap: 7px;
   position: relative;
-  border: 1px solid #d9e2cc;
+  border: 1px solid var(--border);
   border-radius: 5px;
   padding: 7px 10px;
   font-size: 11px;

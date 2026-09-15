@@ -1,3 +1,4 @@
+import { Button } from "@/components/ui/button";
 import { History as HistoryIcon } from "lucide-react";
 import { ErrorBox, Modal } from "../../components";
 import type { History } from "../../types";
@@ -28,9 +29,9 @@ export function HistoryDialog({
       onClose={close}
       wide
       footer={
-        <button className="primary" onClick={close}>
+        <Button variant="default" className="primary" onClick={close}>
           完成
-        </button>
+        </Button>
       }
     >
       <ErrorBox text={error} />
@@ -51,14 +52,14 @@ export function HistoryDialog({
                 <strong>{historyNames[h.status] || h.status}</strong>
                 <time>{new Date(h.at * 1000).toLocaleString("zh-CN")}</time>
                 {["applied", "recovery-needed"].includes(h.status) && (
-                  <button disabled={busy} onClick={() => onRollback(h.id)}>
+                  <Button variant="outline" disabled={busy} onClick={() => onRollback(h.id)}>
                     恢复原文件
-                  </button>
+                  </Button>
                 )}
                 {h.status === "recovery-needed" && (
-                  <button disabled={busy} onClick={() => onKeepRecovery(h.id)}>
+                  <Button variant="outline" disabled={busy} onClick={() => onKeepRecovery(h.id)}>
                     保留当前文件
-                  </button>
+                  </Button>
                 )}
               </div>
               <p>{h.summary}</p>

@@ -1,3 +1,6 @@
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { useState } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { Code, ErrorBox, Modal } from "../../components";
@@ -40,8 +43,8 @@ export function PreviewDialog({
       footer={
         <>
           <span className="muted grow">先备份，再逐文件写入并校验</span>
-          <button onClick={close}>返回</button>
-          <button
+          <Button variant="outline" onClick={close}>返回</Button>
+          <Button variant="default"
             className="primary"
             disabled={
               busy ||
@@ -54,7 +57,7 @@ export function PreviewDialog({
             }}
           >
             应用 {preview.changes.length} 项变更
-          </button>
+          </Button>
         </>
       }
     >
@@ -63,12 +66,11 @@ export function PreviewDialog({
         <ErrorBox key={i} text={e} />
       ))}
       <label className="checkbox-line">
-        <input
-          type="checkbox"
+        <Checkbox
           checked={revealPreview}
           disabled={busy}
-          onChange={(e) =>
-            setRevealedPlanId(e.target.checked ? preview.id : null)
+          onCheckedChange={(checked) =>
+            setRevealedPlanId(checked === true ? preview.id : null)
           }
         />
         显示完整差异（包含命令参数、环境变量与凭据）
@@ -95,7 +97,7 @@ export function PreviewDialog({
           <div className="change-header">
             <strong>{c.key}</strong>
             <span>{c.targetName}</span>
-            <span className="tag">{actionNames[c.action]}</span>
+            <Badge variant="secondary" className="tag">{actionNames[c.action]}</Badge>
           </div>
           <div className="diff-grid">
             <div>
@@ -113,18 +115,18 @@ export function PreviewDialog({
                 <AlertTriangle size={15} />
                 {c.message}
               </p>
-              <button
+              <Button variant="outline"
                 disabled={busy}
                 onClick={() => onResolve(c.serviceId, c.targetId, true)}
               >
                 采用磁盘版本
-              </button>
-              <button
+              </Button>
+              <Button variant="outline"
                 disabled={busy}
                 onClick={() => onResolve(c.serviceId, c.targetId, false)}
               >
                 保留服务库版本
-              </button>
+              </Button>
             </div>
           )}
         </div>

@@ -3,17 +3,17 @@
   display: flex;
   align-items: center;
   gap: 12px;
-  color: #879977;
+  color: var(--muted-foreground);
   font-size: 12px;
   margin: 0 0 20px;
 }
 .preview-summary strong {
   font-size: 26px;
   font-weight: 500;
-  color: #526c3f;
+  color: var(--foreground);
 }
 .change {
-  border: 1px solid #dfe6d3;
+  border: 1px solid var(--border);
   border-radius: 7px;
   margin-bottom: 14px;
   overflow: hidden;
@@ -23,14 +23,14 @@
   align-items: center;
   gap: 12px;
   padding: 11px 14px;
-  background: #f0f4e7;
+  background: var(--muted);
   font-size: 12px;
 }
 .change-header strong {
   font-weight: 500;
 }
 .change-header > span:first-of-type {
-  color: #8b9a7b;
+  color: var(--muted-foreground);
 }
 .change-header .tag {
   margin-left: auto;
@@ -45,12 +45,12 @@
   min-width: 0;
 }
 .diff-grid > div + div {
-  background: #f7f9f0;
-  border-left: 1px solid #e3e9d8;
+  background: var(--muted);
+  border-left: 1px solid var(--border);
 }
 .diff-grid small {
   font-size: 10px;
-  color: #92a080;
+  color: var(--muted-foreground);
   display: block;
   margin-bottom: 9px;
 }
@@ -62,19 +62,19 @@
   max-height: 240px;
 }
 .change.conflict {
-  border-color: #dfc88b;
+  border-color: var(--warning-border);
 }
 /* 冲突仍可展示差异，但必须先通过业务按钮确认基线。 */
 .conflict-actions {
   padding: 12px 14px;
-  background: #fcf6e8;
-  border-top: 1px solid #e6d6ad;
+  background: var(--warning-bg);
+  border-top: 1px solid var(--warning-border);
 }
 .conflict-actions p {
   display: flex;
   gap: 7px;
   align-items: center;
-  color: #aa8b42;
+  color: var(--warning);
   font-size: 11px;
   margin-bottom: 10px;
 }
@@ -85,7 +85,7 @@
 /* 历史摘要、时间和目标路径的展示；是否允许恢复由后端状态与组件决定。 */
 .history-item {
   padding: 17px 16px;
-  border: 1px solid #dce5ce;
+  border: 1px solid var(--border);
   border-radius: 7px;
   margin-bottom: 14px;
 }
@@ -96,11 +96,11 @@
 }
 .history-heading strong {
   font-size: 13px;
-  color: #627c4e;
+  color: var(--foreground);
 }
 .history-heading time {
   font-size: 11px;
-  color: #8e9c7e;
+  color: var(--muted-foreground);
 }
 .history-heading button {
   margin-left: auto;
@@ -109,13 +109,13 @@
 .history-item p {
   font-size: 12px;
   margin: 12px 0;
-  color: #869778;
+  color: var(--muted-foreground);
   line-height: 1.7;
 }
 .history-item code {
   display: block;
   font-size: 10px;
-  color: #9aa78e;
+  color: var(--muted-foreground);
   overflow-wrap: anywhere;
   margin-top: 4px;
 }

@@ -1,3 +1,6 @@
+import { Button } from "@/components/ui/button";
+import { Textarea } from "@/components/ui/textarea";
+import { Input } from "@/components/ui/input";
 import { useState } from "react";
 import { Download } from "lucide-react";
 import { ErrorBox, Modal, ToolIcon } from "../../components";
@@ -31,8 +34,8 @@ export function ImportDialog({
       wide
       footer={
         <>
-          <button onClick={close}>取消</button>
-          <button
+          <Button variant="outline" onClick={close}>取消</Button>
+          <Button variant="default"
             className="primary"
             disabled={busy || !transfer.trim()}
             onClick={async () => {
@@ -43,7 +46,7 @@ export function ImportDialog({
             }}
           >
             导入到服务库
-          </button>
+          </Button>
         </>
       }
     >
@@ -69,7 +72,7 @@ export function ImportDialog({
       <label className="file-picker">
         <Download size={15} />
         选择配置文件
-        <input
+        <Input
           type="file"
           disabled={busy}
           accept=".json,.jsonc,.toml"
@@ -90,7 +93,7 @@ export function ImportDialog({
           }}
         />
       </label>
-      <textarea
+      <Textarea
         className="transfer-code"
         disabled={busy}
         value={transfer}
