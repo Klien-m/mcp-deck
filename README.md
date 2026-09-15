@@ -6,7 +6,7 @@
 
 ## 立即试用
 
-本次交付为 **macOS Apple Silicon（arm64）** 应用，最低系统版本配置为 macOS 12，实际验收系统见 [验证记录](docs/VALIDATION.md)。解压试用包并打开 `MCP Deck.app`，可自行移动到应用程序目录。
+从 [GitHub Releases](https://github.com/Klien-m/mcp-deck/releases) 下载对应平台的安装包：Windows x64 提供 `.exe` / `.msi`，macOS Apple Silicon / Intel 各提供 `.dmg`，Linux x64 提供 `.deb` / `.rpm` / `.AppImage`。macOS 最低系统版本配置为 12，打开 DMG 后将 `MCP Deck.app` 拖入应用程序目录。实际验收系统见 [验证记录](docs/VALIDATION.md)。
 
 1. 点击「发现本机配置」，选择目标工具和已有服务，纳入服务库。此步骤只读取原配置。
 2. 编辑服务，打开要分配到的工具开关。修改先保存在服务库。
@@ -86,6 +86,21 @@ cp .local-dev/app-icons/128x128@2x.png public/app-icon.png
 ```bash
 CARGO_HOME="$PWD/.local-dev/cargo-home" npm test
 ```
+
+## 标签发布
+
+推送任意 Git 标签都会触发 [Release 工作流](.github/workflows/release.yml)。工作流从标签对应的提交构建四个架构、七个安装包，全部成功后发布 GitHub Release，并自动附上自上一个祖先标签以来的提交说明与完整变更链接；首次发布列出完整提交历史。
+
+版本由仓库配置决定。发布前同步更新 `package.json` / `package-lock.json`、`src-tauri/Cargo.toml` / `Cargo.lock` 和 `src-tauri/tauri.conf.json` 的应用版本并提交到 master。首个标签 `v0.1` 对应应用版本 `0.1.0`。例如发布下一版：
+
+```bash
+git switch master
+git pull --ff-only origin master
+git tag -a v0.1.1 -m "发布 v0.1.1"
+git push origin v0.1.1
+```
+
+只有推送到 GitHub 的标签才会触发构建，且该标签必须包含工作流文件。失败时可在 Actions 中重新运行失败任务，或使用 `gh workflow run release.yml --ref v0.1.1` 在同一标签重新执行。构建过程只需要自动提供的 `GITHUB_TOKEN`；Release 发布任务声明 `contents: write` 权限。macOS 使用 ad hoc 签名，Windows 安装包不签名。
 
 ## 真实配置验证
 
