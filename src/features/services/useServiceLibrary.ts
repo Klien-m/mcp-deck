@@ -1,0 +1,85 @@
+import { useEffect, useState } from "react";
+import type { Change, Service, TargetStatus } from "../../types";
+
+/** 纯界面状态与派生列表：筛选、搜索、当前选择和目标计数；不读写 IPC。 */
+export function useServiceLibrary(
+  allServices: Service[],
+  targets: TargetStatus[],
+  changes: Change[],
+) {
+  const [selected, setSelected] = useState({ id: "", version: 0 });
+  const [filter, setFilter] = useState("all");
+  const [query, setQuery] = useState("");
+
+  // 侧栏只展示有分配的目标；当前目标移除或变空后回到“全部”，避免停留在失效筛选。
+  useEffect(() => {
+    setFilter((current) =>
+      current === "all" ||
+      current === "pending" ||
+      (targets.some((t) => t.id === current) &&
+        allServices.some(
+          (service) => !service.deleted && service.targets.includes(current),
+        ))
+        ? current
+        : "all",
+    );
+  }, [allServices, targets]);
+
+  const services = allServices.filter((s) => !s.deleted);
+  const toolTargets = targets
+    .map((t) => ({
+      ...t,
+      serviceCount: services.filter((s) => s.targets.includes(t.id)).length,
+    }))
+    .filter((t) => t.serviceCount > 0);
+  // 同一服务可在多个目标有变更，集合按服务去重，而同步按钮仍展示条目级数量。
+  const pendingIds = new Set(changes.map((c) => c.serviceId));
+  const conflicts = new Set(
+    changes.filter((c) => c.conflict).map((c) => c.serviceId),
+  );
+  const visible = services.filter(
+    (s) =>
+      (filter === "all" ||
+        (filter === "pending" && pendingIds.has(s.id)) ||
+        s.targets.includes(filter)) &&
+      `${s.name} ${s.key} ${s.description}`
+        .toLowerCase()
+        .includes(query.toLowerCase()),
+  );
+  // 搜索隐藏当前选择时暂用第一条可见项；选择身份保留，清除搜索后可恢复。
+  const service = visible.find((s) => s.id === selected.id) || visible[0];
+  const status = (s: Service) =>
+    conflicts.has(s.id)
+      ? "配置冲突"
+      : pendingIds.has(s.id)
+        ? "待应用"
+        : s.targets.length
+          ? "配置已对齐"
+          : "尚未分配";
+
+  // App 将 version 纳入详情 key；再次点击同一行也会重置详情标签和检查状态。
+  const select = (id: string) =>
+    setSelected((current) => ({ id, version: current.version + 1 }));
+  /** 新建或编辑成功后清除筛选并定位保存项，避免已保存服务被当前条件隐藏。 */
+  function revealSaved(id: string) {
+    select(id);
+    setFilter("all");
+    setQuery("");
+  }
+
+  return {
+    services,
+    toolTargets,
+    pendingIds,
+    visible,
+    service,
+    status,
+    selected,
+    filter,
+    query,
+    select,
+    setFilter,
+    setQuery,
+    revealSaved,
+  };
+}

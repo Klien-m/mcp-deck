@@ -1,10 +1,7 @@
 import { useState } from "react";
-import { open } from "@tauri-apps/plugin-dialog";
-import { FolderOpen } from "lucide-react";
-import { Modal, ErrorBox, ToolIcon } from "./components";
-import { Select } from "./Select";
-import { request } from "./api";
-import type { Service, Config, Target, Snapshot } from "./types";
+import { Modal, ErrorBox } from "../../components";
+import { Select } from "../../Select";
+import type { Service, ServiceInput, Config } from "../../types";
 
 const empty: Config = {
   transport: "stdio",
@@ -15,32 +12,44 @@ const empty: Config = {
   url: "",
   headers: {},
 };
-export function Editor({
+/**
+ * 维护服务表单草稿；service=null 表示新建，busy 和保存错误由工作区协调层提供。
+ * 只有 onSave 返回成功才关闭，解析失败或后端拒绝时保留输入内容。
+ */
+export function ServiceEditor({
   service,
   onClose,
-  onSaved,
+  onSave,
+  busy,
+  error: workspaceError,
 }: {
   service: Service | null;
   onClose: () => void;
-  onSaved: (id: string) => Promise<void>;
+  onSave: (input: ServiceInput) => Promise<boolean>;
+  busy: boolean;
+  error: string;
 }) {
   const [name, setName] = useState(service?.name || "");
   const [key, setKey] = useState(service?.key || "");
   const [description, setDescription] = useState(service?.description || "");
   const [config, setConfig] = useState<Config>(service?.config || empty);
+  // JSON 编辑区保存文本草稿，允许用户处于临时无效语法状态，提交时再解析。
   const [args, setArgs] = useState(JSON.stringify(config.args, null, 2));
   const [env, setEnv] = useState(JSON.stringify(config.env, null, 2));
   const [headers, setHeaders] = useState(
     JSON.stringify(config.headers, null, 2),
   );
   const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
   const change = (patch: Partial<Config>) =>
     setConfig((c) => ({ ...c, ...patch }));
+  /**
+   * 提交时仅保留当前传输方式的字段，避免把隐藏的另一套草稿混入有效配置。
+   * JSON 语法在本地检查；字段类型、大小与业务约束由后端校验。
+   */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
-    setBusy(true);
+    if (busy) return;
     try {
       const values = {
         ...config,
@@ -51,21 +60,16 @@ export function Editor({
         cwd: config.transport === "stdio" ? config.cwd : "",
         url: config.transport === "stdio" ? "" : config.url,
       };
-      const id = await request<string>("saveService", {
-        input: {
-          id: service?.id || null,
-          key: key.trim(),
-          name: name.trim(),
-          description,
-          config: values,
-        },
+      const saved = await onSave({
+        id: service?.id || null,
+        key: key.trim(),
+        name: name.trim(),
+        description,
+        config: values,
       });
-      await onSaved(id);
-      onClose();
+      if (saved) onClose();
     } catch (e) {
       setError(String(e));
-    } finally {
-      setBusy(false);
     }
   }
   return (
@@ -88,7 +92,7 @@ export function Editor({
       }
     >
       <form id="editor" onSubmit={submit}>
-        <ErrorBox text={error} />
+        <ErrorBox text={error || workspaceError} />
         <div className="form-grid">
           <label>
             显示名称
@@ -99,6 +103,7 @@ export function Editor({
               maxLength={80}
               onChange={(e) => {
                 setName(e.target.value);
+                // 新建时同步默认配置键；用户手动改过键后不再随显示名称覆盖。
                 if (!service && (!key || key === name)) setKey(e.target.value);
               }}
               placeholder="例如 Filesystem"
@@ -129,7 +134,9 @@ export function Editor({
             <Select
               label="传输方式"
               value={config.transport}
-              onChange={(value) => change({ transport: value as Config["transport"] })}
+              onChange={(value) =>
+                change({ transport: value as Config["transport"] })
+              }
               options={[
                 { value: "stdio", label: "stdio", detail: "本地进程" },
                 { value: "http", label: "Streamable HTTP", detail: "远程服务" },
@@ -204,128 +211,6 @@ export function Editor({
           )}
           <p className="form-note full">
             配置在本机保存。内部版凭据与备份使用本地文件权限保护，尚未接入系统钥匙串；建议沿用目标工具的环境变量与认证机制。
-          </p>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-export function TargetEditor({
-  snapshot,
-  target,
-  onClose,
-  onSaved,
-}: {
-  snapshot: Snapshot;
-  target: Target | null;
-  onClose: () => void;
-  onSaved: () => Promise<void>;
-}) {
-  const [value, setValue] = useState<Target>(
-    target || {
-      id: "",
-      adapterId: "codex",
-      name: "Codex · 自定义位置",
-      path: "",
-    },
-  );
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const adapter = snapshot.adapters.find((a) => a.id === value.adapterId)!;
-  async function choose() {
-    try {
-      const path = await open({
-        multiple: false,
-        directory: false,
-        filters: [{ name: "MCP 配置", extensions: ["json", "jsonc", "toml"] }],
-      });
-      if (typeof path === "string") setValue({ ...value, path });
-    } catch (e) {
-      setError(String(e));
-    }
-  }
-  async function submit(e: React.FormEvent) {
-    e.preventDefault();
-    setBusy(true);
-    setError("");
-    try {
-      await request("saveTarget", { target: value });
-      await onSaved();
-      onClose();
-    } catch (e) {
-      setError(String(e));
-    } finally {
-      setBusy(false);
-    }
-  }
-  return (
-    <Modal
-      title={target ? "配置目标工具" : "添加配置目标"}
-      onClose={() => !busy && onClose()}
-      footer={
-        <>
-          <button onClick={onClose}>取消</button>
-          <button form="target-editor" className="primary" disabled={busy}>
-            保存目标
-          </button>
-        </>
-      }
-    >
-      <form id="target-editor" onSubmit={submit}>
-        <ErrorBox text={error} />
-        <label>
-          适配器
-          <Select
-            label="适配器"
-            disabled={!!target}
-            value={value.adapterId}
-            onChange={(adapterId) =>
-              setValue({
-                ...value,
-                adapterId,
-                name:
-                  snapshot.adapters.find((a) => a.id === adapterId)!.name +
-                  " · 自定义位置",
-              })
-            }
-            options={snapshot.adapters.map((a) => ({
-              value: a.id,
-              label: a.name,
-              icon: <ToolIcon id={a.id} small />,
-            }))}
-          />
-        </label>
-        <label>
-          目标名称
-          <input
-            required
-            value={value.name}
-            onChange={(e) => setValue({ ...value, name: e.target.value })}
-          />
-        </label>
-        <label>
-          配置文件路径
-          <div className="input-row">
-            <input
-              required
-              value={value.path}
-              onChange={(e) => setValue({ ...value, path: e.target.value })}
-              placeholder="/完整路径/mcp.json"
-            />
-            <button type="button" onClick={choose} aria-label="选择配置文件">
-              <FolderOpen size={17} />
-            </button>
-          </div>
-        </label>
-        <div className="callout">
-          <strong>
-            {adapter.format} · {adapter.transports.join(" / ")}
-          </strong>
-          <p>{adapter.note}</p>
-          <p>
-            可指定其他 Profile
-            或项目配置文件。这里只管理选定文件，不计算项目继承、组织策略或运行时启用状态。
           </p>
         </div>
       </form>

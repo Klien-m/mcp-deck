@@ -623,3 +623,270 @@ fn recovery_needed_journal_survives_interrupted_history_save() {
     assert!(engine.preview().unwrap().errors.is_empty());
     assert_eq!(engine.workspace.history.len(), 1);
 }
+
+#[test]
+fn prepared_journal_keeps_files_when_workspace_already_committed() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "committed");
+    engine.assign(&sid, "cursor", true).unwrap();
+    let preview = engine.preview().unwrap();
+    engine.apply(&preview.id).unwrap();
+    let target = path(&engine, "cursor");
+    let applied = fs::read_to_string(&target).unwrap();
+    let journal_path = engine
+        .data_dir
+        .join("backups")
+        .join(format!("{}.json", preview.id));
+    let mut journal: Journal =
+        serde_json::from_str(&fs::read_to_string(&journal_path).unwrap()).unwrap();
+    journal.status = "prepared".into();
+    storage::atomic_write(
+        &journal_path,
+        &serde_json::to_string(&journal).unwrap(),
+        true,
+    )
+    .unwrap();
+    let home = engine.home.clone();
+    let data = engine.data_dir.clone();
+    let revision = engine.workspace.revision;
+    drop(engine);
+
+    let mut engine = Engine::open(home, data).unwrap();
+    assert_eq!(fs::read_to_string(target).unwrap(), applied);
+    assert_eq!(engine.workspace.revision, revision);
+    assert_eq!(engine.workspace.history.len(), 1);
+    assert_eq!(engine.workspace.history[0].status, "applied");
+    assert!(engine.preview().unwrap().changes.is_empty());
+    let journal: Journal =
+        serde_json::from_str(&fs::read_to_string(journal_path).unwrap()).unwrap();
+    assert_eq!(journal.status, "applied");
+}
+
+#[test]
+fn workspace_save_failure_restores_targets_and_does_not_report_success() {
+    let (_temp, mut engine) = setup();
+    let original = "{\"mcpServers\":{},\"untouched\":true}";
+    put(&engine, "cursor", original);
+    let sid = add(&mut engine, "pending");
+    engine.assign(&sid, "codex", true).unwrap();
+    engine.assign(&sid, "cursor", true).unwrap();
+    let preview = engine.preview().unwrap();
+    let workspace_path = engine.data_dir.join("workspace.json");
+    let saved_workspace = fs::read_to_string(&workspace_path).unwrap();
+    let revision = engine.workspace.revision;
+    // A directory at the destination fails publication after target writes,
+    // while the separate backups directory remains writable for recovery.
+    fs::remove_file(&workspace_path).unwrap();
+    fs::create_dir(&workspace_path).unwrap();
+
+    let result = engine.apply(&preview.id);
+    fs::remove_dir(&workspace_path).unwrap();
+    storage::atomic_write(&workspace_path, &saved_workspace, true).unwrap();
+    assert!(result.is_err());
+    assert_eq!(
+        fs::read_to_string(path(&engine, "cursor")).unwrap(),
+        original
+    );
+    assert!(!path(&engine, "codex").exists());
+    assert_eq!(engine.workspace.revision, revision);
+    assert!(engine.workspace.history.is_empty());
+    assert!(engine.workspace.services[0].bindings.is_empty());
+    assert!(engine.apply(&preview.id).is_err());
+    let journal: Journal = serde_json::from_str(
+        &fs::read_to_string(
+            engine
+                .data_dir
+                .join("backups")
+                .join(format!("{}.json", preview.id)),
+        )
+        .unwrap(),
+    )
+    .unwrap();
+    assert_eq!(journal.status, "recovered");
+    let home = engine.home.clone();
+    let data = engine.data_dir.clone();
+    drop(engine);
+    let mut engine = Engine::open(home, data).unwrap();
+    assert!(engine.workspace.history.is_empty());
+    assert_eq!(engine.preview().unwrap().changes.len(), 2);
+}
+
+#[test]
+fn save_export_rejects_managed_and_workspace_paths_without_overwriting() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "exported");
+    let original = "{\"mcpServers\":{},\"untouched\":true}";
+    put(&engine, "cursor", original);
+    let workspace_path = engine.data_dir.join("workspace.json");
+    let workspace_text = fs::read_to_string(&workspace_path).unwrap();
+    let nested_export = engine.data_dir.join("backups/export.json");
+    for destination in [&workspace_path, &path(&engine, "cursor"), &nested_export] {
+        assert_eq!(
+            engine
+                .save_export("cursor", std::slice::from_ref(&sid), true, destination)
+                .unwrap_err(),
+            "导出不能覆盖数据目录或正在管理的配置，请选择其他文件"
+        );
+    }
+    assert_eq!(fs::read_to_string(workspace_path).unwrap(), workspace_text);
+    assert_eq!(
+        fs::read_to_string(path(&engine, "cursor")).unwrap(),
+        original
+    );
+    assert!(!nested_export.exists());
+}
+
+#[test]
+fn save_export_writes_selected_services_and_respects_secret_choice() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "exported");
+    add(&mut engine, "not-selected");
+    let destination = engine.home.join("exports/mcp.json");
+    let adapter = adapters::get("cursor").unwrap();
+    for include_secrets in [false, true] {
+        engine
+            .save_export(
+                "cursor",
+                std::slice::from_ref(&sid),
+                include_secrets,
+                &destination,
+            )
+            .unwrap();
+        let entries =
+            adapters::parse(&adapter, &fs::read_to_string(&destination).unwrap()).unwrap();
+        assert_eq!(entries.len(), 1);
+        assert_eq!(
+            entries["exported"]["env"]["TOKEN"],
+            if include_secrets {
+                "line1\nline2"
+            } else {
+                "<已隐藏>"
+            }
+        );
+        if include_secrets {
+            assert_eq!(
+                adapters::decode(&adapter, &entries["exported"]).unwrap(),
+                stdio()
+            );
+        }
+    }
+    assert!(engine.workspace.history.is_empty());
+}
+
+#[test]
+fn rejected_batch_edits_preserve_workspace_and_existing_plan() {
+    for operation in ["adopt", "import"] {
+        let (_temp, mut engine) = setup();
+        let sid = add(&mut engine, "managed");
+        engine.assign(&sid, "codex", true).unwrap();
+        let original =
+            r#"{"mcpServers":{"a-valid":{"command":"node"},"z-invalid":{"command":42}}}"#;
+        put(&engine, "cursor", original);
+        let plan = engine.preview().unwrap();
+        let before = serde_json::to_value(&engine.workspace).unwrap();
+        let persisted = fs::read(engine.data_dir.join("workspace.json")).unwrap();
+
+        let result = if operation == "adopt" {
+            engine.adopt("cursor", vec!["a-valid".into(), "z-invalid".into()])
+        } else {
+            engine.import_text("cursor", original).map(|_| ())
+        };
+        assert!(result.is_err(), "{operation}");
+        assert_eq!(serde_json::to_value(&engine.workspace).unwrap(), before);
+        assert_eq!(
+            fs::read(engine.data_dir.join("workspace.json")).unwrap(),
+            persisted
+        );
+        assert_eq!(
+            fs::read_to_string(path(&engine, "cursor")).unwrap(),
+            original
+        );
+        // A rejected draft must not invalidate an otherwise applicable plan.
+        engine.apply(&plan.id).unwrap();
+        assert!(path(&engine, "codex").is_file());
+    }
+}
+
+#[test]
+fn successful_workspace_use_cases_invalidate_the_previous_plan() {
+    for operation in [
+        "save", "assign", "remove", "adopt", "import", "target", "resolve",
+    ] {
+        let (_temp, mut engine) = setup();
+        let sid = add(&mut engine, "managed");
+        engine.assign(&sid, "codex", true).unwrap();
+        put(
+            &engine,
+            "cursor",
+            r#"{"mcpServers":{"external":{"command":"node"}}}"#,
+        );
+        let plan = engine.preview().unwrap();
+        let revision = engine.workspace.revision;
+        match operation {
+            "save" => {
+                engine
+                    .save_service(ServiceInput {
+                        id: Some(sid.clone()),
+                        key: "managed".into(),
+                        name: "Renamed".into(),
+                        description: String::new(),
+                        config: stdio(),
+                    })
+                    .unwrap();
+            }
+            "assign" => engine.assign(&sid, "cursor", true).unwrap(),
+            "remove" => engine.remove(&sid, false).unwrap(),
+            "adopt" => engine.adopt("cursor", vec!["external".into()]).unwrap(),
+            "import" => {
+                engine
+                    .import_text(
+                        "cursor",
+                        r#"{"mcpServers":{"imported":{"command":"node"}}}"#,
+                    )
+                    .unwrap();
+            }
+            "target" => {
+                let mut target = engine
+                    .workspace
+                    .targets
+                    .iter()
+                    .find(|t| t.id == "cursor")
+                    .unwrap()
+                    .clone();
+                target.name = "Renamed target".into();
+                engine.save_target(target).unwrap();
+            }
+            "resolve" => engine.resolve(&sid, "codex", false).unwrap(),
+            _ => unreachable!(),
+        }
+        assert_eq!(engine.workspace.revision, revision + 1, "{operation}");
+        assert!(engine.apply(&plan.id).is_err(), "{operation}");
+        assert!(!path(&engine, "codex").exists(), "{operation}");
+    }
+}
+
+#[test]
+fn failed_workspace_commit_does_not_publish_service_edit_or_discard_plan() {
+    let (_temp, mut engine) = setup();
+    let sid = add(&mut engine, "managed");
+    engine.assign(&sid, "codex", true).unwrap();
+    let plan = engine.preview().unwrap();
+    let before = serde_json::to_value(&engine.workspace).unwrap();
+    let workspace_path = engine.data_dir.join("workspace.json");
+    let saved_path = engine.data_dir.join("workspace.saved");
+    fs::rename(&workspace_path, &saved_path).unwrap();
+    fs::create_dir(&workspace_path).unwrap();
+    let result = engine.save_service(ServiceInput {
+        id: Some(sid),
+        key: "managed".into(),
+        name: "Should not persist".into(),
+        description: String::new(),
+        config: stdio(),
+    });
+    assert!(result.is_err());
+    assert_eq!(serde_json::to_value(&engine.workspace).unwrap(), before);
+    fs::remove_dir(&workspace_path).unwrap();
+    fs::rename(&saved_path, &workspace_path).unwrap();
+    engine.apply(&plan.id).unwrap();
+    assert_eq!(engine.workspace.services[0].name, "managed");
+}

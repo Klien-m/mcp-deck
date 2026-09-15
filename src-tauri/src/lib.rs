@@ -1,184 +1,41 @@
+//! 库入口：公开不依赖桌面运行时的配置核心，desktop 特性启用 Tauri 宿主。
+//! 命令分发与 Engine 独立，使核心测试可以在无窗口环境运行。
+
 pub mod adapters;
+pub mod commands;
 pub mod engine;
 pub mod model;
 pub mod storage;
 
 #[cfg(feature = "desktop")]
 mod desktop {
-    use super::*;
-    use model::{Result, ServiceInput, Target};
-    use serde::Deserialize;
-    use serde_json::{json, Value};
-    use std::{path::PathBuf, sync::Mutex};
-
-    #[derive(Deserialize)]
-    #[serde(tag = "op", rename_all = "camelCase", rename_all_fields = "camelCase")]
-    pub enum Request {
-        Snapshot,
-        SaveService {
-            input: ServiceInput,
-        },
-        Assign {
-            service_id: String,
-            target_id: String,
-            enabled: bool,
-        },
-        Remove {
-            service_id: String,
-            undo: bool,
-        },
-        Discover {
-            target_id: String,
-        },
-        Adopt {
-            target_id: String,
-            keys: Vec<String>,
-        },
-        ImportText {
-            adapter_id: String,
-            text: String,
-        },
-        SaveTarget {
-            target: Target,
-        },
-        Preview {
-            #[serde(default)]
-            reveal: bool,
-            #[serde(default)]
-            include_details: bool,
-        },
-        Apply {
-            id: String,
-        },
-        Resolve {
-            service_id: String,
-            target_id: String,
-            use_disk: bool,
-        },
-        Rollback {
-            id: String,
-        },
-        KeepRecovery {
-            id: String,
-        },
-        Export {
-            adapter_id: String,
-            service_ids: Vec<String>,
-            include_secrets: bool,
-        },
-        SaveExport {
-            adapter_id: String,
-            service_ids: Vec<String>,
-            include_secrets: bool,
-            path: String,
-        },
-        Checks {
-            service_id: String,
-        },
-    }
+    use crate::{
+        commands::{self, Request},
+        engine::Engine,
+        model::Result,
+    };
+    use serde_json::Value;
+    use std::sync::Mutex;
 
     #[tauri::command]
+    /// 持有进程内互斥锁完成一次命令；初始化失败时将原始错误返回界面。
+    /// 状态保留 `Result<Engine>`，因此加载失败仍能启动窗口显示错误，而非创建空工作区。
     pub fn dispatch(
-        state: tauri::State<'_, Mutex<Result<engine::Engine>>>,
+        state: tauri::State<'_, Mutex<Result<Engine>>>,
         request: Request,
     ) -> Result<Value> {
         let mut lock = state.lock().map_err(|_| "应用状态异常，请重新启动")?;
         let engine = lock.as_mut().map_err(|e| e.clone())?;
-        match request {
-            Request::Snapshot => Ok(json!(engine.snapshot())),
-            Request::SaveService { input } => Ok(json!(engine.save_service(input)?)),
-            Request::Assign {
-                service_id,
-                target_id,
-                enabled,
-            } => {
-                engine.assign(&service_id, &target_id, enabled)?;
-                Ok(Value::Null)
-            }
-            Request::Remove { service_id, undo } => {
-                engine.remove(&service_id, undo)?;
-                Ok(Value::Null)
-            }
-            Request::Discover { target_id } => Ok(json!(engine.discover(&target_id)?)),
-            Request::Adopt { target_id, keys } => {
-                engine.adopt(&target_id, keys)?;
-                Ok(Value::Null)
-            }
-            Request::ImportText { adapter_id, text } => {
-                Ok(json!(engine.import_text(&adapter_id, &text)?))
-            }
-            Request::SaveTarget { target } => {
-                engine.save_target(target)?;
-                Ok(Value::Null)
-            }
-            Request::Preview {
-                reveal,
-                include_details,
-            } => Ok(json!(if include_details {
-                engine.preview_with_details()?
-            } else {
-                engine.preview_values(reveal)?
-            })),
-            Request::Apply { id } => {
-                engine.apply(&id)?;
-                Ok(Value::Null)
-            }
-            Request::Resolve {
-                service_id,
-                target_id,
-                use_disk,
-            } => {
-                engine.resolve(&service_id, &target_id, use_disk)?;
-                Ok(Value::Null)
-            }
-            Request::Rollback { id } => {
-                engine.rollback(&id)?;
-                Ok(Value::Null)
-            }
-            Request::KeepRecovery { id } => {
-                engine.keep_recovery(&id)?;
-                Ok(Value::Null)
-            }
-            Request::Export {
-                adapter_id,
-                service_ids,
-                include_secrets,
-            } => Ok(json!(engine.export(
-                &adapter_id,
-                &service_ids,
-                include_secrets
-            )?)),
-            Request::SaveExport {
-                adapter_id,
-                service_ids,
-                include_secrets,
-                path,
-            } => {
-                let path = PathBuf::from(path);
-                storage::validate_path(&path)?;
-                if path.starts_with(&engine.data_dir)
-                    || engine
-                        .workspace
-                        .targets
-                        .iter()
-                        .any(|t| std::path::Path::new(&t.path) == path)
-                {
-                    return Err("导出不能覆盖数据目录或正在管理的配置，请选择其他文件".into());
-                }
-                let text = engine.export(&adapter_id, &service_ids, include_secrets)?;
-                storage::atomic_write(&path, &text, true)?;
-                Ok(Value::Null)
-            }
-            Request::Checks { service_id } => engine.checks(&service_id),
-        }
+        commands::dispatch(engine, request)
     }
 }
 
 #[cfg(feature = "desktop")]
+/// 选择真实或隔离目录，初始化工作区并注册唯一的桌面 IPC 入口。
 pub fn run() {
     use std::{path::PathBuf, sync::Mutex};
-    // Debug builds always use project-local fixtures unless an explicit test home is supplied.
-    // Release builds use the user's real home and never inherit a compiled-in fixture path.
+    // Debug 默认指向项目内样例目录；显式 MCP_DECK_HOME 可覆盖此选择。
+    // Release 不编入样例路径，未设置隔离环境变量时使用当前用户目录。
     #[cfg(debug_assertions)]
     if std::env::var_os("MCP_DECK_HOME").is_none() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
