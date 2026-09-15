@@ -1,21 +1,30 @@
 name: Release
+run-name: Release ${{ inputs.tag || github.ref_name }}
 
 on:
   push:
     tags:
       - '**'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: '要重建的已有标签（例如 v0.3）；留空时使用当前标签'
+        required: false
+        type: string
 
 permissions:
   contents: read
 
+env:
+  RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+
 concurrency:
-  group: release-${{ github.ref }}
+  group: release-${{ inputs.tag || github.ref_name }}
   cancel-in-progress: false
 
 jobs:
   build:
-    if: startsWith(github.ref, 'refs/tags/')
+    if: startsWith(github.ref, 'refs/tags/') || (github.event_name == 'workflow_dispatch' && inputs.tag != '')
     name: Build ${{ matrix.target }}
     runs-on: ${{ matrix.os }}
     timeout-minutes: 60
@@ -38,6 +47,15 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
+      - name: Keep version script from workflow revision
+        shell: bash
+        run: cp scripts/set-release-version.mjs "$RUNNER_TEMP/set-release-version.mjs"
+
+      - name: Check out release source
+        uses: actions/checkout@v7
+        with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
+
       - name: Install Linux dependencies
         if: runner.os == 'Linux'
         run: |
@@ -50,7 +68,8 @@ jobs:
           cache: npm
 
       - name: Set application version from tag
-        run: node scripts/set-release-version.mjs
+        shell: bash
+        run: node "$RUNNER_TEMP/set-release-version.mjs" "$RELEASE_TAG"
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -64,18 +83,29 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Configure macOS packaging
+      - name: Configure macOS signing
         if: runner.os == 'macOS'
+        run: echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"
+
+      - name: Install custom macOS packaging
+        if: runner.os == 'macOS' && hashFiles('scripts/build-dmg.py') != ''
         run: |
-          echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"
           python3 -m venv .local-dev/dmg-venv
           .local-dev/dmg-venv/bin/python -m pip install -r scripts/dmg-requirements.txt
 
       - name: Build installers
-        run: npm run tauri build -- --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked
+        shell: bash
+        env:
+          BUILD_TARGET: ${{ matrix.target }}
+          BUILD_BUNDLES: ${{ matrix.bundles }}
+        run: |
+          if [[ "$RUNNER_OS" == 'macOS' && ! -f scripts/build-dmg.py ]]; then
+            BUILD_BUNDLES=dmg
+          fi
+          npm run tauri build -- --ci --target "$BUILD_TARGET" --bundles "$BUILD_BUNDLES" -- --locked
 
       - name: Build macOS disk image
-        if: runner.os == 'macOS'
+        if: runner.os == 'macOS' && hashFiles('scripts/build-dmg.py') != ''
         run: .local-dev/dmg-venv/bin/python scripts/build-dmg.py --target ${{ matrix.target }}
 
       - uses: actions/upload-artifact@v7
@@ -103,7 +133,14 @@ jobs:
       GH_TOKEN: ${{ github.token }}
     steps:
       - uses: actions/checkout@v7
+
+      - name: Keep release notes script from workflow revision
+        run: cp scripts/release-notes.mjs "$RUNNER_TEMP/release-notes.mjs"
+
+      - name: Check out release source
+        uses: actions/checkout@v7
         with:
+          ref: refs/tags/${{ env.RELEASE_TAG }}
           fetch-depth: 0
 
       - uses: actions/setup-node@v7
@@ -116,7 +153,7 @@ jobs:
           path: release-assets
 
       - name: Generate release notes
-        run: node scripts/release-notes.mjs > release-notes.md
+        run: node "$RUNNER_TEMP/release-notes.mjs" "$RELEASE_TAG" > release-notes.md
 
       - name: Upload installers and publish
         shell: bash
@@ -126,8 +163,8 @@ jobs:
             echo "Expected 7 installers, found ${#assets[@]}" >&2
             exit 1
           fi
-          if ! gh release view "$GITHUB_REF_NAME" > /dev/null 2>&1; then
-            gh release create "$GITHUB_REF_NAME" --verify-tag --draft --title "MCP Deck $GITHUB_REF_NAME" --notes-file release-notes.md
+          if ! gh release view "$RELEASE_TAG" > /dev/null 2>&1; then
+            gh release create "$RELEASE_TAG" --verify-tag --draft --title "MCP Deck $RELEASE_TAG" --notes-file release-notes.md
           fi
-          gh release upload "$GITHUB_REF_NAME" "${assets[@]}" --clobber
-          gh release edit "$GITHUB_REF_NAME" --draft=false --title "MCP Deck $GITHUB_REF_NAME" --notes-file release-notes.md
+          gh release upload "$RELEASE_TAG" "${assets[@]}" --clobber
+          gh release edit "$RELEASE_TAG" --draft=false --title "MCP Deck $RELEASE_TAG" --notes-file release-notes.md

@@ -1,9 +1,9 @@
 import { execFileSync } from 'node:child_process';
 
-const tag = process.env.GITHUB_REF_NAME;
+const tag = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 const repository = process.env.GITHUB_REPOSITORY;
 if (!tag || !repository) {
-  throw new Error('GITHUB_REF_NAME and GITHUB_REPOSITORY are required');
+  throw new Error('A release tag and GITHUB_REPOSITORY are required');
 }
 
 const git = (...args) => execFileSync('git', args, { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }).trim();

@@ -129,7 +129,9 @@ git push origin v0.1.1
 
 只有推送到 GitHub 的标签才会触发构建，且该标签必须包含工作流文件。失败时可在 Actions 中重新运行失败任务，或使用 `gh workflow run release.yml --ref v0.1.1` 在同一标签重新执行。构建过程只需要自动提供的 `GITHUB_TOKEN`；Release 发布任务声明 `contents: write` 权限。macOS 使用 ad hoc 签名，Windows 安装包不签名。
 
-已存在的标签重新运行时仍使用该标签内的工作流；自动提取版本的规则需在提交上述改动后创建的新标签中使用。可运行 `node --test scripts/set-release-version.test.mjs` 验证版本同步脚本。
+若要用最新工作流重建旧版本，运行 `gh workflow run release.yml --ref master -f tag=v0.3`。工作流使用 master 中的版本同步和更新说明脚本，检出指定标签的原始代码，再按标签版本打包；旧版没有定制 DMG 脚本时使用 Tauri 原生 DMG 打包。标签指向保持不变。新附件验证成功后，可清理该 Release 中旧版本号的附件。
+
+可运行 `node --test scripts/set-release-version.test.mjs` 验证版本同步脚本。
 
 ## 真实配置验证
 

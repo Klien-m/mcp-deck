@@ -1,6 +1,6 @@
 import { readFileSync, writeFileSync } from 'node:fs';
 
-const tag = process.env.GITHUB_REF_NAME;
+const tag = process.argv[2] ?? process.env.GITHUB_REF_NAME;
 const match = /^v?(0|[1-9]\d*)\.(0|[1-9]\d*)(?:\.(0|[1-9]\d*))?$/.exec(tag || '');
 if (!match || match[0] !== tag) {
   throw new Error('发布标签必须为 v主版本.次版本 或 v主版本.次版本.修订号（v 可省略），例如 v0.2、v0.2.1');

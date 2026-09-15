@@ -81,3 +81,14 @@ test('Windows CRLF files keep their line endings', (t) => {
   assert.equal(result.status, 0, result.stderr);
   for (const path of Object.keys(fixtures)) assert.doesNotMatch(read(path), /(?<!\r)\n/);
 });
+
+test('a requested tag overrides the workflow branch during a rebuild', (t) => {
+  const { directory, read } = workspace(t);
+  const result = spawnSync(process.execPath, [script, 'v0.3'], {
+    cwd: directory,
+    encoding: 'utf8',
+    env: { ...process.env, GITHUB_REF_NAME: 'master' },
+  });
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(JSON.parse(read('src-tauri/tauri.conf.json')).version, '0.3.0');
+});
