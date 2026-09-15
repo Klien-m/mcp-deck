@@ -87,6 +87,32 @@ cp .local-dev/app-icons/128x128@2x.png public/app-icon.png
 CARGO_HOME="$PWD/.local-dev/cargo-home" npm test
 ```
 
+## macOS DMG 安装界面
+
+DMG 使用极简浅灰背景、中文拖拽指引和原生 Finder 图标。背景素材为 `src-tauri/dmg/background.png`（1320 × 840 像素 / 660 × 420 点），窗口和图标位置统一在 `src-tauri/tauri.conf.json` 的 `bundle.macOS.dmg` 中配置。图标中心为 `(180, 230)` 和 `(480, 230)`；窗口高度额外预留 28 点标题栏。
+
+在 macOS 上安装打包依赖并构建（Python 3.10+）：
+
+```bash
+python3 -m venv .local-dev/dmg-venv
+.local-dev/dmg-venv/bin/python -m pip install -r scripts/dmg-requirements.txt
+npm run tauri build -- --bundles app
+.local-dev/dmg-venv/bin/python scripts/build-dmg.py
+```
+
+交叉编译时，为 Tauri 构建和 `build-dmg.py` 同时传入 `--target aarch64-apple-darwin` 或 `--target x86_64-apple-darwin`。安装盘输出到对应的 `target[/<target>]/release/bundle/dmg/`。
+
+发布工作流采用同样的流程：Tauri 构建并签名 app，固定版本的 `dmgbuild` 直接写入安装盘的 Finder 视图信息。这样无需运行 Finder / AppleScript，也不会受构建机器的 Finder 默认排序或异步保存影响。不要使用 Tauri 默认的 `--bundles dmg` 代替此流程；它可能丢失定制背景和布局。
+
+背景 PNG 随仓库保存，常规构建无需重新生成。修改背景时，在 macOS 上执行：
+
+```bash
+clang -fobjc-arc -framework AppKit scripts/generate-dmg-background.m -o /tmp/mcp-deck-dmg-background
+/tmp/mcp-deck-dmg-background src-tauri/dmg/background.png
+```
+
+安装包生成后应挂载检查窗口、背景、图标位置和 `/Applications` 链接。
+
 ## 标签发布
 
 推送任意 Git 标签都会触发 [Release 工作流](.github/workflows/release.yml)。工作流从标签对应的提交构建四个架构、七个安装包，全部成功后发布 GitHub Release，并自动附上自上一个祖先标签以来的提交说明与完整变更链接；首次发布列出完整提交历史。

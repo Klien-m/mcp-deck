@@ -28,10 +28,10 @@ jobs:
             bundles: nsis,msi
           - os: macos-latest
             target: aarch64-apple-darwin
-            bundles: dmg
+            bundles: app
           - os: macos-latest
             target: x86_64-apple-darwin
-            bundles: dmg
+            bundles: app
           - os: ubuntu-22.04
             target: x86_64-unknown-linux-gnu
             bundles: deb,rpm,appimage
@@ -61,12 +61,19 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
-      - name: Configure macOS ad hoc signing
+      - name: Configure macOS packaging
         if: runner.os == 'macOS'
-        run: echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"
+        run: |
+          echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"
+          python3 -m venv .local-dev/dmg-venv
+          .local-dev/dmg-venv/bin/python -m pip install -r scripts/dmg-requirements.txt
 
       - name: Build installers
         run: npm run tauri build -- --ci --target ${{ matrix.target }} --bundles ${{ matrix.bundles }} -- --locked
+
+      - name: Build macOS disk image
+        if: runner.os == 'macOS'
+        run: .local-dev/dmg-venv/bin/python scripts/build-dmg.py --target ${{ matrix.target }}
 
       - uses: actions/upload-artifact@v7
         with:
