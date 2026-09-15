@@ -157,9 +157,16 @@ pub struct Workspace {
     pub version: u32,
     /// 工作区提交序号，作为同步计划失效依据；不是客户端文件的修改时间。
     pub revision: u64,
+    /// 旧工作区缺少此字段时不重复引导；新工作区显式设为 false。
+    #[serde(default = "onboarding_already_complete")]
+    pub onboarding_complete: bool,
     pub services: Vec<Service>,
     pub targets: Vec<Target>,
     pub history: Vec<History>,
+}
+
+fn onboarding_already_complete() -> bool {
+    true
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

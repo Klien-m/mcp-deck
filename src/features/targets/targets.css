@@ -164,3 +164,60 @@
   font-size: 11px;
   padding: 5px 8px;
 }
+
+/* 首次启动复用发现列表，额外提供工具分组、扫描摘要及文件级错误。 */
+.onboarding-intro {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  color: #60794b;
+}
+.onboarding-intro > svg {
+  flex-shrink: 0;
+}
+.onboarding-intro h3 {
+  margin: 0 0 6px;
+  font-size: 16px;
+}
+.onboarding-intro p {
+  margin: 0;
+  font-size: 12px;
+  line-height: 1.7;
+}
+.onboarding-summary {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin: 20px 0 12px;
+  font-size: 12px;
+  color: #707c65;
+}
+.onboarding-summary button {
+  font-size: 11px;
+}
+.onboarding-tool {
+  margin-bottom: 14px;
+}
+.onboarding-path {
+  margin: 0;
+  padding: 10px 15px;
+  border-bottom: 1px solid #e6ecdd;
+  font: 10px/1.7 Menlo, monospace;
+  color: #8e9b80;
+  overflow-wrap: anywhere;
+}
+.onboarding-read-error {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 12px 15px;
+  background: #faf5eb;
+  color: #805b24;
+  font-size: 12px;
+  overflow-wrap: anywhere;
+}
+.onboarding-read-error > svg {
+  flex-shrink: 0;
+}

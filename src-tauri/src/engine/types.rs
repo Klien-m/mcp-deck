@@ -39,6 +39,23 @@ pub struct Discovery {
     /// 该键在目标上已有非空绑定；纳入时还会重新检查分配占用与最新磁盘内容。
     pub managed: bool,
 }
+
+#[derive(Clone, Serialize)]
+#[serde(rename_all = "camelCase")]
+/// 聚合发现按工具分组；单个文件读取失败不阻断其他工具。
+pub struct TargetDiscovery {
+    pub target: Target,
+    pub items: Vec<Discovery>,
+    pub error: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(rename_all = "camelCase")]
+/// 用户明确选择的来源与配置键；提交时重新读取来源文件。
+pub struct Adoption {
+    pub target_id: String,
+    pub keys: Vec<String>,
+}
 #[derive(Clone, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase")]
 /// 事务级完整文件前后文本，用于乐观并发校验、备份和精确恢复。

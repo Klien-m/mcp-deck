@@ -2,7 +2,7 @@
 //! 此层仅反序列化、调用用例和序列化结果，不依赖 Tauri 窗口或持有独立状态。
 
 use crate::{
-    engine::Engine,
+    engine::{Adoption, Engine},
     model::{Result, ServiceInput, Target},
 };
 use serde::Deserialize;
@@ -28,6 +28,10 @@ pub enum Request {
     },
     Discover {
         target_id: String,
+    },
+    DiscoverAll,
+    CompleteOnboarding {
+        selections: Vec<Adoption>,
     },
     Adopt {
         target_id: String,
@@ -96,6 +100,11 @@ pub fn dispatch(engine: &mut Engine, request: Request) -> Result<Value> {
             Ok(Value::Null)
         }
         Request::Discover { target_id } => Ok(json!(engine.discover(&target_id)?)),
+        Request::DiscoverAll => Ok(json!(engine.discover_all())),
+        Request::CompleteOnboarding { selections } => {
+            engine.complete_onboarding(selections)?;
+            Ok(Value::Null)
+        }
         Request::Adopt { target_id, keys } => {
             engine.adopt(&target_id, keys)?;
             Ok(Value::Null)

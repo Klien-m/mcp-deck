@@ -2,6 +2,7 @@ import { ServiceEditor } from "../features/services/ServiceEditor";
 import { TargetEditor } from "../features/targets/TargetEditor";
 import { ToolsDialog } from "../features/targets/ToolsDialog";
 import { DiscoveryDialog } from "../features/targets/DiscoveryDialog";
+import { OnboardingDialog } from "../features/targets/OnboardingDialog";
 import { ImportDialog } from "../features/transfer/ImportDialog";
 import { ExportDialog } from "../features/transfer/ExportDialog";
 import { PreviewDialog } from "../features/sync/PreviewDialog";
@@ -21,6 +22,7 @@ export type WorkspaceView =
   | { type: "service"; service: Service | null }
   | { type: "target"; target: Target | null }
   | { type: "discover"; targetId: string }
+  | { type: "onboarding" }
   | { type: "export"; serviceIds: string[] }
   | { type: "import" | "preview" | "history" | "tools" };
 
@@ -29,6 +31,7 @@ type DialogActions = Pick<
   | "saveService"
   | "saveTarget"
   | "adopt"
+  | "completeOnboarding"
   | "importText"
   | "saveExport"
   | "apply"
@@ -80,6 +83,16 @@ export function WorkspaceDialogs({
   };
   const common = { error, busy, onClose: close };
   switch (view?.type) {
+    case "onboarding":
+      return (
+        <OnboardingDialog
+          error={error}
+          busy={busy}
+          onComplete={actions.completeOnboarding}
+          onCompleted={imported}
+          onClearError={onClearError}
+        />
+      );
     case "service":
       return (
         <ServiceEditor

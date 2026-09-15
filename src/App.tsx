@@ -58,6 +58,9 @@ export default function App() {
   const addService = () => show({ type: "service", service: null });
 
   if (!data) return <Startup fatal={fatal || error} onRetry={actions.reload} />;
+  // 由持久化状态决定首次引导，避免刷新、StrictMode 或空服务库重复触发。
+  const activeView: WorkspaceView | null =
+    view ?? (data.workspace.onboardingComplete ? null : { type: "onboarding" });
   const { service } = library;
   const discover = () =>
     show({
@@ -75,7 +78,7 @@ export default function App() {
       onPreview={showPreview}
       overlays={
         <>
-          {error && !view && (
+          {error && !activeView && (
             <div className="floating-error">
               <ErrorBox text={error} />
               <button
@@ -104,7 +107,7 @@ export default function App() {
             </div>
           )}
           <WorkspaceDialogs
-            view={view}
+            view={activeView}
             adapters={data.adapters}
             targets={data.targets}
             history={data.workspace.history}

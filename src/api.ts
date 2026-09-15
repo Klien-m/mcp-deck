@@ -1,12 +1,14 @@
 /** 类型化 Tauri IPC 边界；命令名、字段和结果须与 Rust commands::Request / dispatch 同步维护。 */
 import { invoke, isTauri } from "@tauri-apps/api/core";
 import type {
+  Adoption,
   Checks,
   Discovery,
   Preview,
   ServiceInput,
   Snapshot,
   Target,
+  TargetDiscovery,
 } from "./types";
 
 /**
@@ -26,6 +28,9 @@ export interface CommandMap {
   remove: { args: { serviceId: string; undo: boolean }; result: null };
   /** 只读发现；不支持项仍返回错误与脱敏预览。 */
   discover: { args: { targetId: string }; result: Discovery[] };
+  discoverAll: { args: Record<string, never>; result: TargetDiscovery[] };
+  /** 多工具纳管与完成标记原子保存；空选择表示跳过。 */
+  completeOnboarding: { args: { selections: Adoption[] }; result: null };
   /** 按当前磁盘键批量纳入管理并建立绑定，成功返回 null。 */
   adopt: { args: { targetId: string; keys: string[] }; result: null };
   /** 批量导入指定格式的文本，返回新增数量；不会自动分配目标。 */

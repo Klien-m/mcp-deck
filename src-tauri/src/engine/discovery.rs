@@ -1,10 +1,54 @@
 //! 发现与导入：来源文件只读，完整原生条目留在服务库中用于无损回写。
 //! 调用方必须传入草稿并在整个批次成功后提交，不能持久化中途追加的部分服务。
 
-use super::Discovery;
+use super::{targets, Adoption, Discovery, TargetDiscovery};
 use crate::{adapters, model::*};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
+
+/// 不把不存在或没有 MCP 的配置文件列为纳管候选，读取错误独立保留。
+pub(super) fn discover_all(workspace: &Workspace) -> Vec<TargetDiscovery> {
+    workspace
+        .targets
+        .iter()
+        .filter_map(|target| {
+            let result = targets::read_target(target)
+                .and_then(|(_, entries)| discover(workspace, target, entries));
+            match result {
+                Ok(items) if items.is_empty() => None,
+                Ok(items) => Some(TargetDiscovery {
+                    target: target.clone(),
+                    items,
+                    error: None,
+                }),
+                Err(error) => Some(TargetDiscovery {
+                    target: target.clone(),
+                    items: vec![],
+                    error: Some(error),
+                }),
+            }
+        })
+        .collect()
+}
+
+/// 仅更新调用方提供的草稿；任何目标失败都不应提交部分服务或完成标记。
+pub(super) fn complete_onboarding(
+    workspace: &mut Workspace,
+    selections: Vec<Adoption>,
+) -> Result<()> {
+    for selection in selections {
+        if selection.keys.is_empty() {
+            continue;
+        }
+        let target = targets::find_target(workspace, &selection.target_id)?;
+        let (_, entries) = targets::read_target(&target)
+            .map_err(|error| format!("{}：{error}", target.name))?;
+        adopt(workspace, &target, &entries, selection.keys)
+            .map_err(|error| format!("{}：{error}", target.name))?;
+    }
+    workspace.onboarding_complete = true;
+    Ok(())
+}
 
 /// 逐项解码；不支持项仍以脱敏预览和错误返回，便于展示只读状态。
 pub(super) fn discover(

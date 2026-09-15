@@ -86,6 +86,8 @@ export interface Snapshot {
     version: number;
     /** 工作区提交序号，用于后端拒绝过期计划。 */
     revision: number;
+    /** 新工作区完成或跳过首次引导后持久化为 true。 */
+    onboardingComplete: boolean;
     services: Service[];
     targets: Target[];
     history: History[];
@@ -132,6 +134,16 @@ export interface Discovery {
   preview: unknown;
   error: string | null;
   managed: boolean;
+}
+/** 聚合扫描只返回有 MCP 或读取错误的工具。 */
+export interface TargetDiscovery {
+  target: Target;
+  items: Discovery[];
+  error: string | null;
+}
+export interface Adoption {
+  targetId: string;
+  keys: string[];
 }
 /** 静态诊断结果，不能用作 MCP 加载成功或服务连通性的判断。 */
 export interface Checks {

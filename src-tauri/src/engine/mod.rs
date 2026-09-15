@@ -14,7 +14,7 @@ mod types;
 use targets::{find_target, read_target};
 pub use transaction::Journal;
 use types::Plan;
-pub use types::{Discovery, FileEdit, Preview, Snapshot, TargetStatus};
+pub use types::{Adoption, Discovery, FileEdit, Preview, Snapshot, TargetDiscovery, TargetStatus};
 
 use crate::{adapters, model::*, storage};
 use serde_json::Value;
@@ -56,6 +56,7 @@ impl Engine {
             Workspace {
                 version: 1,
                 revision: 0,
+                onboarding_complete: false,
                 services: vec![],
                 targets: adapters::default_targets(&home),
                 history: vec![],
@@ -149,6 +150,16 @@ impl Engine {
         let target = self.target(target_id)?;
         let (_, entries) = self.read_target(&target)?;
         discovery::discover(&self.workspace, &target, entries)
+    }
+
+    /// 查询全部登记路径，返回有 MCP 条目或读取错误的工具；不写入任何状态。
+    pub fn discover_all(&self) -> Vec<TargetDiscovery> {
+        discovery::discover_all(&self.workspace)
+    }
+
+    /// 所选工具的纳管与引导状态一次提交；空选择表示跳过。
+    pub fn complete_onboarding(&mut self, selections: Vec<Adoption>) -> Result<()> {
+        self.update(|workspace| discovery::complete_onboarding(workspace, selections))
     }
 
     /// 重新读取磁盘后按键纳入管理；整个批次成功后才提交，不改来源文件。

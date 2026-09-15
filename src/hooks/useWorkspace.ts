@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { request } from "../api";
 import type { CommandArgs, CommandResult } from "../api";
-import type { Preview, ServiceInput, Snapshot, Target } from "../types";
+import type { Adoption, Preview, ServiceInput, Snapshot, Target } from "../types";
 
 /** 可产生持久化副作用的命令集合；只读查询和预览有独立调用路径。 */
 type Mutation =
@@ -11,6 +11,7 @@ type Mutation =
   | "assign"
   | "remove"
   | "adopt"
+  | "completeOnboarding"
   | "importText"
   | "apply"
   | "resolve"
@@ -139,6 +140,17 @@ export function useWorkspace({
     async adopt(targetId: string, keys: string[]) {
       return (
         await mutate("adopt", { targetId, keys }, "已纳入服务库，保留原配置")
+      ).ok;
+    },
+    async completeOnboarding(selections: Adoption[]) {
+      return (
+        await mutate(
+          "completeOnboarding",
+          { selections },
+          selections.length
+            ? "已纳入所选 MCP，保留各工具原配置"
+            : "可随时通过「发现本机配置」纳入已有 MCP",
+        )
       ).ok;
     },
     async importText(adapterId: string, text: string) {
