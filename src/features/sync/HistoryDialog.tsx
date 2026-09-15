@@ -3,6 +3,10 @@ import { ErrorBox, Modal } from "../../components";
 import type { History } from "../../types";
 import { historyNames } from "./labels";
 
+/**
+ * 倒序展示同步记录；仅已应用或待恢复记录提供恢复，保留当前文件只适用于待恢复。
+ * 这里只表达可用操作，真实路径、状态和外部修改检查仍由事务层执行。
+ */
 export function HistoryDialog({
   history,
   error,

@@ -1,20 +1,25 @@
-//! Pure change planning from a workspace and already-read target snapshots.
+//! 基于已读取的目标快照计算差异，无文件读写或工作区提交。
+//! 比较磁盘实际值、上次绑定基线和服务库期望值，输出展示差异、文件草稿及阻断原因。
+
 use super::FileEdit;
 use crate::{adapters, model::*};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
+/// 单次目标读取结果；读取错误作为输入保留，使其他目标仍能生成诊断信息。
 pub(super) struct TargetSnapshot<'a> {
     pub target: &'a Target,
     pub contents: Result<(Option<String>, BTreeMap<String, Value>)>,
 }
 
+/// 未授权执行的计划草稿；Engine 只有在无错误且无冲突时才缓存为 Plan。
 pub(super) struct Draft {
     pub changes: Vec<Change>,
     pub errors: Vec<String>,
     pub files: Vec<FileEdit>,
 }
 
+/// 期望分配或仍有原始绑定的服务均需参与；后者用于生成取消分配和软删除差异。
 pub(super) fn relevant_services<'a>(
     workspace: &'a Workspace,
     target: &'a Target,
@@ -28,6 +33,7 @@ pub(super) fn relevant_services<'a>(
     })
 }
 
+/// 对每个目标生成条目补丁和完整文件文本；输出原始值，展示脱敏由同步层处理。
 pub(super) fn build(workspace: &Workspace, snapshots: Vec<TargetSnapshot<'_>>) -> Result<Draft> {
     let mut changes = vec![];
     let mut errors = vec![];
@@ -52,6 +58,7 @@ pub(super) fn build(workspace: &Workspace, snapshots: Vec<TargetSnapshot<'_>>) -
         let adapter = adapters::get(&target.adapter_id)?;
         let mut patches = BTreeMap::new();
         for service in relevant {
+            // expected 是上次确认的基线，actual 是本次磁盘值，desired 是本次期望值。
             let expected = service
                 .bindings
                 .get(&target.id)
@@ -59,6 +66,7 @@ pub(super) fn build(workspace: &Workspace, snapshots: Vec<TargetSnapshot<'_>>) -
             let actual = entries.get(&service.key);
             let wanted = !service.deleted && service.targets.contains(&target.id);
             let desired = if wanted {
+                // 优先沿用该目标的原生字段；首次分配才回退到来源适配器的原始条目。
                 let base = expected.or_else(|| service.native.get(&target.adapter_id));
                 match adapters::encode(&adapter, &service.config, base) {
                     Ok(v) => Some(v),
@@ -70,6 +78,7 @@ pub(super) fn build(workspace: &Workspace, snapshots: Vec<TargetSnapshot<'_>>) -
             } else {
                 None
             };
+            // 即使磁盘碰巧等于期望值，只要偏离已确认基线，也要求用户明确解决冲突。
             let conflict = actual != expected;
             if desired.as_ref() == actual && !conflict {
                 continue;
@@ -101,6 +110,7 @@ pub(super) fn build(workspace: &Workspace, snapshots: Vec<TargetSnapshot<'_>>) -
                 conflict,
                 message: message.into(),
             });
+            // 多个服务争用同一配置键时阻断整次应用，避免后一个补丁静默覆盖前一个。
             if patches.insert(service.key.clone(), desired).is_some() {
                 errors.push(format!("{} 中存在重复配置键 {}", target.name, service.key));
             }

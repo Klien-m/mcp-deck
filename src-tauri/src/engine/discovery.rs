@@ -1,8 +1,12 @@
+//! 发现与导入：来源文件只读，完整原生条目留在服务库中用于无损回写。
+//! 调用方必须传入草稿并在整个批次成功后提交，不能持久化中途追加的部分服务。
+
 use super::Discovery;
 use crate::{adapters, model::*};
 use serde_json::Value;
 use std::collections::{BTreeMap, BTreeSet};
 
+/// 逐项解码；不支持项仍以脱敏预览和错误返回，便于展示只读状态。
 pub(super) fn discover(
     workspace: &Workspace,
     target: &Target,
@@ -28,6 +32,7 @@ pub(super) fn discover(
         .collect())
 }
 
+/// 按唯一配置键接管当前目标条目，记录来源基线和原生字段；缺失或已管理时拒绝。
 pub(super) fn adopt(
     workspace: &mut Workspace,
     target: &Target,
@@ -36,6 +41,7 @@ pub(super) fn adopt(
 ) -> Result<()> {
     let target_id = target.id.as_str();
     let adapter = adapters::get(&target.adapter_id)?;
+    // 同批次重复选择只处理一次；跨服务的同键目标占用仍由下面的校验拒绝。
     let mut unique = BTreeSet::new();
     for key in keys {
         if !unique.insert(key.clone()) {
@@ -74,6 +80,7 @@ pub(super) fn adopt(
     Ok(())
 }
 
+/// 受大小和数量限制的文本导入；仅保留来源格式，不建立实际目标绑定。
 pub(super) fn import_text(
     workspace: &mut Workspace,
     adapter_id: &str,

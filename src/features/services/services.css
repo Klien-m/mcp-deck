@@ -1,3 +1,4 @@
+/* 服务库列表与详情：卡片、配置概览、目标分配。保持列表和详情各自滚动。 */
 .list-panel {
   border-right: 1px solid var(--line);
   display: flex;
@@ -93,6 +94,7 @@
   justify-content: flex-start;
   min-height: 96px;
 }
+/* 选中与悬停状态分开定义，避免鼠标悬停抹掉当前选中反馈。 */
 .service.selected {
   background: #eaf0e0;
   border: 1px solid #dce5cd;
@@ -182,6 +184,7 @@
   font-size: 13px;
   margin-bottom: 14px;
 }
+/* 详情内容独立滚动，不推动整个工作区或侧栏。 */
 .detail {
   overflow: auto;
   padding: 29px 32px 34px;
@@ -287,6 +290,7 @@
   white-space: pre-wrap;
   color: #647454;
 }
+/* 目标分配行与 switch 展示期望配置，实际写入仍需同步预览。 */
 .assignment {
   border: 1px solid #dee5d3;
   border-radius: 7px;

@@ -1,3 +1,6 @@
+//! 库入口：公开不依赖桌面运行时的配置核心，desktop 特性启用 Tauri 宿主。
+//! 命令分发与 Engine 独立，使核心测试可以在无窗口环境运行。
+
 pub mod adapters;
 pub mod commands;
 pub mod engine;
@@ -15,6 +18,8 @@ mod desktop {
     use std::sync::Mutex;
 
     #[tauri::command]
+    /// 持有进程内互斥锁完成一次命令；初始化失败时将原始错误返回界面。
+    /// 状态保留 `Result<Engine>`，因此加载失败仍能启动窗口显示错误，而非创建空工作区。
     pub fn dispatch(
         state: tauri::State<'_, Mutex<Result<Engine>>>,
         request: Request,
@@ -26,10 +31,11 @@ mod desktop {
 }
 
 #[cfg(feature = "desktop")]
+/// 选择真实或隔离目录，初始化工作区并注册唯一的桌面 IPC 入口。
 pub fn run() {
     use std::{path::PathBuf, sync::Mutex};
-    // Debug builds always use project-local fixtures unless an explicit test home is supplied.
-    // Release builds use the user's real home and never inherit a compiled-in fixture path.
+    // Debug 默认指向项目内样例目录；显式 MCP_DECK_HOME 可覆盖此选择。
+    // Release 不编入样例路径，未设置隔离环境变量时使用当前用户目录。
     #[cfg(debug_assertions)]
     if std::env::var_os("MCP_DECK_HOME").is_none() {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR"))

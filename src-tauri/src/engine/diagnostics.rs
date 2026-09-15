@@ -1,7 +1,10 @@
+//! 本地静态配置诊断：检查字段、占位值和命令候选路径，不启动 MCP 或联网。
+
 use crate::model::*;
 use serde_json::{json, Value};
 use std::path::{Path, PathBuf};
 
+/// 汇总提示并返回找到的命令文件；文件存在不等价于具备执行权限或客户端可用。
 pub(super) fn checks(workspace: &Workspace, home: &Path, service_id: &str) -> Result<Value> {
     let service = workspace
         .services
@@ -33,6 +36,7 @@ pub(super) fn checks(workspace: &Workspace, home: &Path, service_id: &str) -> Re
         } else {
             let mut dirs = std::env::split_paths(&std::env::var_os("PATH").unwrap_or_default())
                 .collect::<Vec<_>>();
+            // 桌面进程 PATH 可能缺少终端中的安装目录，补查常见位置及当前工作区 home。
             dirs.extend([
                 PathBuf::from("/opt/homebrew/bin"),
                 PathBuf::from("/usr/local/bin"),

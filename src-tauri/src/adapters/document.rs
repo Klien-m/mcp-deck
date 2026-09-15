@@ -1,4 +1,6 @@
-//! Document parsing and local edits that preserve unrelated configuration content.
+//! JSONC / TOML 文档解析及局部补丁；保留未管理条目和其他配置内容。
+//! 先验证输入，再用语法树编辑目标节点，最后重新解析并检查每个补丁的语义。
+
 use super::{Adapter, Dialect};
 use crate::model::Result;
 use jsonc_parser::{
@@ -8,6 +10,7 @@ use jsonc_parser::{
 use serde_json::{json, Value};
 use std::collections::BTreeMap;
 
+/// 只提取适配器根节点下的服务；根节点缺失视为空，错误类型或歧义文档直接拒绝。
 pub fn parse(adapter: &Adapter, text: &str) -> Result<BTreeMap<String, Value>> {
     let value: Value = if adapter.dialect == Dialect::Codex {
         toml_edit::de::from_str(text).map_err(|_| "TOML 格式无效，请先在工具中修复配置")?
@@ -30,6 +33,7 @@ pub fn parse(adapter: &Adapter, text: &str) -> Result<BTreeMap<String, Value>> {
     }
 }
 
+/// 递归检查解码后的属性名，连同转义后同名的键一起拒绝，避免读写选中不同值。
 fn reject_duplicate_keys(node: &CstNode) -> Result<()> {
     if let Some(object) = node.as_object() {
         let mut seen = std::collections::BTreeSet::new();
@@ -50,6 +54,7 @@ fn reject_duplicate_keys(node: &CstNode) -> Result<()> {
     Ok(())
 }
 
+/// 将 JSON 值递归转换为 CST 输入节点，让编辑器负责字符串转义和局部格式。
 fn input(v: &Value) -> CstInputValue {
     match v {
         Value::Null => CstInputValue::Null,
@@ -63,6 +68,8 @@ fn input(v: &Value) -> CstInputValue {
     }
 }
 
+/// 只修改 patches 指定的服务；Some 更新或新增，None 删除，其他条目保留。
+/// original=None 表示原文件不存在；返回新文档文本，实际落盘由事务层决定。
 pub fn patch(
     adapter: &Adapter,
     original: Option<&str>,
@@ -81,6 +88,7 @@ pub fn patch(
         if !doc.contains_key(adapter.root_key) {
             doc[adapter.root_key] = toml_edit::Item::Table(toml_edit::Table::new());
         }
+        // 具名服务段要求根节点可容纳子表；仅在根节点是内联表时将其展开。
         if doc[adapter.root_key].is_inline_table() {
             let root = std::mem::take(&mut doc[adapter.root_key]);
             doc[adapter.root_key] = toml_edit::Item::Table(
@@ -103,6 +111,7 @@ pub fn patch(
                         .ok_or("服务为空")?
                         .into_table()
                         .map_err(|_| "服务配置必须是 TOML 表")?;
+                    // 显式输出 [mcp_servers.<name>]；表插入接口负责点号、空格等名称的引用。
                     table.set_implicit(false);
                     servers.insert(name, toml_edit::Item::Table(table));
                 }
@@ -113,6 +122,7 @@ pub fn patch(
         }
         doc.to_string()
     } else {
+        // JSONC 使用具体语法树，避免整份 JSON 重新序列化丢失旁侧注释和原始格式。
         let doc =
             CstRootNode::parse(source, &ParseOptions::default()).map_err(|_| "无法解析 JSONC")?;
         let root = doc.object_value_or_set();
@@ -140,6 +150,7 @@ pub fn patch(
         }
         doc.to_string()
     };
+    // 文档能序列化不代表补丁正确，必须逐键回读验证新增、更新和删除结果。
     let parsed = parse(adapter, &output)?;
     for (key, v) in patches {
         if parsed.get(key) != v.as_ref() {

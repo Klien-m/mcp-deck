@@ -2,6 +2,7 @@ import { Plus } from "lucide-react";
 import { ErrorBox, Modal, ToolIcon } from "../../components";
 import type { Adapter, Target, TargetStatus } from "../../types";
 
+/** 展示已登记目标与读取概况；路径编辑和发现由上层切换到对应业务弹窗。 */
 export function ToolsDialog({
   adapters,
   targets,

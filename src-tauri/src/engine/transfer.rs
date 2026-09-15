@@ -1,6 +1,10 @@
+//! 将服务库转换为独立导出文档；不建立绑定，也不改写当前同步计划。
+
 use crate::{adapters, model::*, storage};
 use std::{collections::BTreeMap, path::Path};
 
+/// 空 service_ids 表示全部未删除服务；同名配置键不能合并时拒绝导出。
+/// include_secrets=false 输出脱敏模板，仍需用户补齐隐藏值后才可使用。
 pub(super) fn export(
     workspace: &Workspace,
     adapter_id: &str,
@@ -23,6 +27,7 @@ pub(super) fn export(
     adapters::patch(&adapter, None, &patches)
 }
 
+/// 验证目标保护规则后重新生成并原子保存，禁止借导出绕过托管文件的同步流程。
 pub(super) fn save_export(
     workspace: &Workspace,
     data_dir: &Path,

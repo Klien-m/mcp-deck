@@ -1,3 +1,5 @@
+//! 目标路径校验、保存及只读快照加载；一个目标对应一个确定的配置文件。
+
 use crate::{adapters, model::*, storage};
 use serde_json::Value;
 use std::{
@@ -5,9 +7,11 @@ use std::{
     path::{Path, PathBuf},
 };
 
+/// 校验路径、名称及占用关系，更新草稿；已有管理关系时禁止更换路径或适配器。
 pub(super) fn save(workspace: &mut Workspace, data_dir: &Path, mut target: Target) -> Result<()> {
     adapters::get(&target.adapter_id)?;
     storage::validate_path(Path::new(&target.path))?;
+    // 在拒绝 .. 和符号链接后按路径组件统一表示，再检查重复目标及数据目录边界。
     target.path = Path::new(&target.path)
         .components()
         .collect::<PathBuf>()
@@ -45,6 +49,7 @@ pub(super) fn save(workspace: &mut Workspace, data_dir: &Path, mut target: Targe
     Ok(())
 }
 
+/// 按 ID 返回目标副本；找不到时保留明确错误而非选择默认目标。
 pub(super) fn find_target(workspace: &Workspace, id: &str) -> Result<Target> {
     workspace
         .targets
@@ -54,6 +59,7 @@ pub(super) fn find_target(workspace: &Workspace, id: &str) -> Result<Target> {
         .ok_or_else(|| "目标工具不存在".into())
 }
 
+/// 返回完整原文和解析条目；文件缺失返回 None 与空映射，格式错误不能当作空配置。
 pub(super) fn read_target(target: &Target) -> Result<(Option<String>, BTreeMap<String, Value>)> {
     storage::validate_path(Path::new(&target.path))?;
     let text = storage::read_config(Path::new(&target.path))?;

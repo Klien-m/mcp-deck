@@ -5,6 +5,7 @@ import { ErrorBox, Modal, ToolIcon } from "../../components";
 import { Select } from "../../Select";
 import type { Discovery, TargetStatus } from "../../types";
 
+/** 读取一个目标中的配置并选择可纳入项；发现只读，实际接管通过 onAdopt 统一提交。 */
 export function DiscoveryDialog({
   targets,
   initialTarget,
@@ -33,9 +34,11 @@ export function DiscoveryDialog({
   const [loading, setLoading] = useState(true);
   const [localError, setLocalError] = useState("");
   const requestId = useRef(0);
+  // 响应绑定目标 ID；目标刚切换而新请求未完成时不展示上一目标的结果。
   const discovered =
     discoveryResult?.targetId === discoveryTarget ? discoveryResult.items : [];
   const busy = workspaceBusy || loading;
+  // 全选与提交使用同一可导入集合，不能包含已托管或无法解析的条目。
   const importableKeys = discovered
     .filter((d) => d.config && !d.error && !d.managed)
     .map((d) => d.key);
@@ -46,6 +49,7 @@ export function DiscoveryDialog({
     if (!busy) onClose();
   };
 
+  // 切换目标清空选择并使旧请求失效；这是结果隔离，不会取消后端已经开始的读取。
   useEffect(() => {
     const id = ++requestId.current;
     setLoading(true);
@@ -125,6 +129,7 @@ export function DiscoveryDialog({
                 type="checkbox"
                 checked={allChosen}
                 ref={(input) => {
+                  // indeterminate 是 DOM 属性，React 的 checked 只能表示全选／未全选。
                   if (input)
                     input.indeterminate = chosenKeys.length > 0 && !allChosen;
                 }}

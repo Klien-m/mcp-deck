@@ -1,3 +1,4 @@
+/** 工作区装配入口：组合数据操作、服务筛选与视图路由，不直接调用写入 IPC。 */
 import { useEffect, useState } from "react";
 import { Check, X } from "lucide-react";
 import { ErrorBox } from "./components";
@@ -12,10 +13,12 @@ import { WorkspaceDialogs } from "./layout/WorkspaceDialogs";
 import type { WorkspaceView } from "./layout/WorkspaceDialogs";
 import type { Change, Service, TargetStatus } from "./types";
 
+// 稳定的空数组让初始化阶段也能无条件调用 Hook，避免每次渲染产生新的依赖引用。
 const emptyServices: Service[] = [];
 const emptyTargets: TargetStatus[] = [];
 const emptyChanges: Change[] = [];
 
+/** 保存当前弹窗、通知和撤销入口；服务选择归 useServiceLibrary，持久化归 useWorkspace。 */
 export default function App() {
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [toast, setToast] = useState("");
@@ -40,13 +43,16 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [toast]);
 
+  /** 切换视图时清除上一操作错误，避免把旧弹窗的失败提示带到新表单。 */
   function show(next: WorkspaceView | null) {
     clearError();
     setView(next);
   }
+  /** 先成功获取含完整差异的计划，再打开弹窗；后续明文切换只读本地数据。 */
   async function showPreview() {
     if (await actions.loadPreview()) show({ type: "preview" });
   }
+  // 空数组表示导出整个服务库；按服务导出时传入具体 ID，保持弹窗期间数组引用稳定。
   const showExport = (serviceIds: string[]) =>
     show({ type: "export", serviceIds });
   const addService = () => show({ type: "service", service: null });

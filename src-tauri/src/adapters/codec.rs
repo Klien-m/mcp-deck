@@ -1,9 +1,12 @@
-//! Conversion between client-specific service fields and the shared configuration.
+//! 客户端原生条目与公共 Config 的双向转换，不接触文件。
+//! 未知原生字段通过 base 保留；已知字段类型不兼容时拒绝接管，避免有损转换。
+
 use super::{Adapter, Dialect};
 use crate::model::{Config, Result, Transport};
 use serde_json::{json, Map, Value};
 use std::collections::BTreeMap;
 
+/// 缺失字符串字段按空值处理；类型不符时报错，不做隐式转换。
 fn string(obj: &Map<String, Value>, key: &str) -> Result<String> {
     match obj.get(key) {
         None => Ok(String::new()),
@@ -11,6 +14,7 @@ fn string(obj: &Map<String, Value>, key: &str) -> Result<String> {
         _ => Err(format!("{key} 不是字符串；此服务先只读保留")),
     }
 }
+/// 读取字符串数组，保留空参数和每个元素的边界，不解析 shell 命令行。
 fn strings(obj: &Map<String, Value>, key: &str) -> Result<Vec<String>> {
     match obj.get(key) {
         None => Ok(vec![]),
@@ -25,6 +29,7 @@ fn strings(obj: &Map<String, Value>, key: &str) -> Result<Vec<String>> {
         _ => Err(format!("{key} 必须是数组")),
     }
 }
+/// 读取字符串键值对象；认证表达式等非字符串结构保留为只读错误。
 fn map(obj: &Map<String, Value>, key: &str) -> Result<BTreeMap<String, String>> {
     match obj.get(key) {
         None => Ok(BTreeMap::new()),
@@ -40,6 +45,7 @@ fn map(obj: &Map<String, Value>, key: &str) -> Result<BTreeMap<String, String>> 
     }
 }
 
+/// 识别客户端方言并规范化配置；未知类型、非法字段和不支持传输均返回错误。
 pub fn decode(adapter: &Adapter, raw: &Value) -> Result<Config> {
     let obj = raw.as_object().ok_or("此条目不是服务对象，先只读保留")?;
     let kind = obj.get("type").and_then(Value::as_str).unwrap_or("");
@@ -121,11 +127,13 @@ pub fn decode(adapter: &Adapter, raw: &Value) -> Result<Config> {
     Ok(config)
 }
 
+/// 在 base 原生字段上覆盖公共配置；配置未变时直接返回 base，减少无意义改写。
 pub fn encode(adapter: &Adapter, config: &Config, base: Option<&Value>) -> Result<Value> {
     config.validate()?;
     if !adapter.transports.contains(&config.transport) {
         return Err(format!("{} 不支持此传输方式", adapter.name));
     }
+    // 原始条目能无损还原相同配置时优先保留，兼容已有但本应用不声明编辑支持的字段。
     if let Some(base) = base {
         if decode(adapter, base).as_ref().ok() == Some(config) {
             return Ok(base.clone());
@@ -138,6 +146,7 @@ pub fn encode(adapter: &Adapter, config: &Config, base: Option<&Value>) -> Resul
         ));
     }
     let mut raw = base.and_then(Value::as_object).cloned().unwrap_or_default();
+    // 仅清理公共模型负责的字段和别名；OAuth、enabled 等专属字段继续保留。
     for key in [
         "type",
         "command",
@@ -220,6 +229,7 @@ pub fn encode(adapter: &Adapter, config: &Config, base: Option<&Value>) -> Resul
             );
         }
     }
+    // Copilot 新条目补全默认工具范围，已有用户配置则保持原值。
     if adapter.dialect == Dialect::Copilot {
         raw.entry("tools").or_insert(json!(["*"]));
     }

@@ -10,6 +10,7 @@ import {
 import { ToolIcon } from "../components";
 import type { TargetStatus } from "../types";
 
+/** 展示工作区筛选、已分配目标与功能入口；计数由服务库派生，组件不持有业务状态。 */
 export function Sidebar({
   filter,
   onFilter,

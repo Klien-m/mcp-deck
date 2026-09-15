@@ -12,6 +12,10 @@ import type {
 
 import { actionNames } from "../sync/labels";
 
+/**
+ * 展示一个服务的概览、公共配置与静态检查；changes 必须已由上层过滤到本服务。
+ * 分配和移除通过业务回调执行，局部状态只属于当前详情实例。
+ */
 export function ServiceDetail({
   service,
   adapters,
@@ -44,6 +48,7 @@ export function ServiceDetail({
   } | null>(null);
   const [checkError, setCheckError] = useState("");
   const requestId = useRef(0);
+  // 同时绑定服务 ID 与请求代次，避免切换服务后短暂显示上一项的检查结果。
   const checks =
     checkState?.serviceId === service.id ? checkState.result : null;
   const adapter = (id: string) => adapters.find((a) => a.id === id)!;
@@ -57,6 +62,7 @@ export function ServiceDetail({
     };
   }, [service.id]);
 
+  /** 重新检查时清除旧结果，只接受最后一次请求；检查本身不启动或连接服务。 */
   async function checkService() {
     const id = ++requestId.current;
     const serviceId = service.id;
@@ -167,6 +173,7 @@ export function ServiceDetail({
             {targets.map((t) => {
               const a = adapter(t.adapterId);
               const checked = service.targets.includes(t.id);
+              // 界面兼容性只决定能否新增分配；已有不兼容分配仍允许取消，后端会再次校验。
               const compatible =
                 a.transports.includes(service.config.transport) &&
                 (a.supportsCwd || !service.config.cwd);

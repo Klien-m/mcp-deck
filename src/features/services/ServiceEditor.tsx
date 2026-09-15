@@ -12,6 +12,10 @@ const empty: Config = {
   url: "",
   headers: {},
 };
+/**
+ * 维护服务表单草稿；service=null 表示新建，busy 和保存错误由工作区协调层提供。
+ * 只有 onSave 返回成功才关闭，解析失败或后端拒绝时保留输入内容。
+ */
 export function ServiceEditor({
   service,
   onClose,
@@ -29,6 +33,7 @@ export function ServiceEditor({
   const [key, setKey] = useState(service?.key || "");
   const [description, setDescription] = useState(service?.description || "");
   const [config, setConfig] = useState<Config>(service?.config || empty);
+  // JSON 编辑区保存文本草稿，允许用户处于临时无效语法状态，提交时再解析。
   const [args, setArgs] = useState(JSON.stringify(config.args, null, 2));
   const [env, setEnv] = useState(JSON.stringify(config.env, null, 2));
   const [headers, setHeaders] = useState(
@@ -37,6 +42,10 @@ export function ServiceEditor({
   const [error, setError] = useState("");
   const change = (patch: Partial<Config>) =>
     setConfig((c) => ({ ...c, ...patch }));
+  /**
+   * 提交时仅保留当前传输方式的字段，避免把隐藏的另一套草稿混入有效配置。
+   * JSON 语法在本地检查；字段类型、大小与业务约束由后端校验。
+   */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError("");
@@ -94,6 +103,7 @@ export function ServiceEditor({
               maxLength={80}
               onChange={(e) => {
                 setName(e.target.value);
+                // 新建时同步默认配置键；用户手动改过键后不再随显示名称覆盖。
                 if (!service && (!key || key === name)) setKey(e.target.value);
               }}
               placeholder="例如 Filesystem"

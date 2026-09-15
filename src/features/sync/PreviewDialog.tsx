@@ -4,6 +4,10 @@ import { Code, ErrorBox, Modal } from "../../components";
 import type { Preview } from "../../types";
 import { actionNames } from "./labels";
 
+/**
+ * 展示同一计划的两份差异并提交应用或冲突选择；明文开关不触发 IPC。
+ * 错误、零变更或未解决冲突会阻止应用，后台仍会校验修订和磁盘原文。
+ */
 export function PreviewDialog({
   preview,
   error,
@@ -25,6 +29,7 @@ export function PreviewDialog({
   preview: Preview;
   onApplied: () => void;
 }) {
+  // 将明文选择绑定当前计划 ID：计划变化自动回到脱敏，无需重挂载弹窗或重置其他状态。
   const [revealedPlanId, setRevealedPlanId] = useState<string | null>(null);
   const revealPreview = revealedPlanId === preview.id;
   return (

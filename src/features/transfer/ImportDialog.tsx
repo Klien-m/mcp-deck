@@ -4,6 +4,7 @@ import { ErrorBox, Modal, ToolIcon } from "../../components";
 import { Select } from "../../Select";
 import type { Adapter } from "../../types";
 
+/** 接收粘贴或文件文本，保留来源适配器选择；批量解析与原子导入由后端执行。 */
 export function ImportDialog({
   adapters,
   error,
@@ -21,6 +22,7 @@ export function ImportDialog({
 }) {
   const [adapterId, setAdapterId] = useState("claude");
   const [transfer, setTransfer] = useState("");
+  // 本地文件读取错误与后端导入错误分开；输入修正或重试时清除旧本地错误。
   const [localError, setLocalError] = useState("");
   return (
     <Modal
@@ -74,6 +76,7 @@ export function ImportDialog({
           onChange={async (e) => {
             const file = e.target.files?.[0];
             if (!file) return;
+            // 读取前限制 1 MB，后端也会按实际文本字节数再次校验，不能仅依赖文件扩展名。
             if (file.size > 1024 * 1024) {
               setLocalError("文件不能超过 1 MB");
               return;

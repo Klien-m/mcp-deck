@@ -1,4 +1,7 @@
-//! Journal, target files and workspace publication are one recovery protocol.
+//! 目标文件、备份日志和工作区历史共同构成恢复协议。
+//! 正常顺序：prepared 日志落盘 → 逐文件校验写入 → 工作区提交 → 日志标记 applied。
+//! 崩溃恢复以工作区中的已提交事务 ID 为依据，不能仅凭 prepared 日志就回退文件。
+
 use super::{find_target, read_target, FileEdit, Plan};
 use crate::{adapters, model::*, storage};
 use serde::{Deserialize, Serialize};
@@ -10,13 +13,16 @@ use std::{
 };
 
 #[derive(Clone, Serialize, Deserialize)]
+/// 持久化事务日志，包含恢复所需的完整文本；仅保存在受限权限的备份目录。
 pub struct Journal {
     pub id: String,
+    /// prepared 表示写入待确认；applied、recovered、recovery-needed 等状态必须兼容已有备份。
     pub status: String,
     pub files: Vec<FileEdit>,
     pub count: usize,
 }
 
+/// 以私有文件权限原子替换工作区 JSON，不自行推进修订号。
 pub(super) fn save_workspace(workspace: &Workspace, data_dir: &Path) -> Result<()> {
     storage::atomic_write(
         &data_dir.join("workspace.json"),
@@ -25,6 +31,7 @@ pub(super) fn save_workspace(workspace: &Workspace, data_dir: &Path) -> Result<(
     )
 }
 
+/// 递增一次修订并持久化，失败时恢复内存中的旧状态并返回错误。
 pub(super) fn commit_workspace(
     workspace: &mut Workspace,
     data_dir: &Path,
@@ -39,12 +46,14 @@ pub(super) fn commit_workspace(
     Ok(())
 }
 
+/// 借用同一工作区与数据目录执行事务，不创建第二份独立引擎状态。
 pub(super) struct Transaction<'a> {
     workspace: &'a mut Workspace,
     data_dir: &'a Path,
 }
 
 impl<'a> Transaction<'a> {
+    /// 绑定当前工作区；提交与恢复期间复用调用方持有的锁。
     pub(super) fn new(workspace: &'a mut Workspace, data_dir: &'a Path) -> Self {
         Self {
             workspace,
@@ -52,10 +61,12 @@ impl<'a> Transaction<'a> {
         }
     }
 
+    /// 复用普通编辑的提交规则，让恢复和文件写入也维护同一修订序列。
     fn commit(&mut self, next: Workspace) -> Result<()> {
         commit_workspace(self.workspace, self.data_dir, next)
     }
 
+    /// 先验证 UUID，再拼接日志路径，避免将调用方提供的 ID 解释成任意路径。
     fn journal_path(&self, journal_id: &str) -> Result<PathBuf> {
         uuid::Uuid::parse_str(journal_id).map_err(|_| "无效的记录 ID")?;
         Ok(self
@@ -64,6 +75,7 @@ impl<'a> Transaction<'a> {
             .join(format!("{journal_id}.json")))
     }
 
+    /// 完整备份使用私有权限保存；prepared 状态必须先于目标写入落盘。
     fn save_journal(&self, journal: &Journal) -> Result<()> {
         storage::atomic_write(
             &self.journal_path(&journal.id)?,
@@ -72,6 +84,7 @@ impl<'a> Transaction<'a> {
         )
     }
 
+    /// 按记录 ID 读取受大小限制的备份；损坏日志报错，不能猜测原始文件内容。
     fn load_journal(&self, journal_id: &str) -> Result<Journal> {
         let path = self.journal_path(journal_id)?;
         if fs::metadata(&path).map_err(|e| e.to_string())?.len() > 32 * 1024 * 1024 {
@@ -81,6 +94,7 @@ impl<'a> Transaction<'a> {
             .map_err(|_| "恢复记录无法读取".into())
     }
 
+    /// 按写入的反向顺序恢复；已是原始值则跳过，后来外部改动则保留并汇总失败。
     fn restore_files(files: &[FileEdit]) -> Vec<String> {
         let mut failures = vec![];
         for file in files.iter().rev() {
@@ -99,6 +113,7 @@ impl<'a> Transaction<'a> {
         failures
     }
 
+    /// 启动时处理未完成事务并补齐恢复历史；最终工作区由 Engine::open 统一保存。
     pub(super) fn recover(&mut self) -> Result<()> {
         for entry in fs::read_dir(self.data_dir.join("backups")).map_err(|e| e.to_string())? {
             let path = entry.map_err(|e| e.to_string())?.path();
@@ -110,7 +125,7 @@ impl<'a> Transaction<'a> {
             }
             let mut journal = self.load_journal(jid)?;
             if journal.status != "prepared" {
-                // The journal may have been saved immediately before a crash interrupted the workspace save.
+                // 可能在保存 recovery-needed 日志后、工作区历史落盘前崩溃，需要补回入口。
                 if journal.status == "recovery-needed"
                     && !self.workspace.history.iter().any(|h| h.id == journal.id)
                 {
@@ -125,6 +140,7 @@ impl<'a> Transaction<'a> {
                 }
                 continue;
             }
+            // 历史已提交为 applied，说明文件及绑定已发布；仅补写日志，不能误回滚。
             if self
                 .workspace
                 .history
@@ -159,6 +175,8 @@ impl<'a> Transaction<'a> {
         Ok(())
     }
 
+    /// 执行带备份的多文件写入；失败时尝试反向恢复，并记录仍需人工处理的文件。
+    /// 文件替换逐个进行，并非跨文件系统事务，因此中断必须依赖日志恢复。
     pub(super) fn execute(&mut self, plan: Plan, summary: String) -> Result<()> {
         if plan.files.is_empty() {
             return Err("当前没有需要应用的变更".into());
@@ -173,6 +191,7 @@ impl<'a> Transaction<'a> {
         if total > 12 * 1024 * 1024 {
             return Err("本次配置总量过大，请分批应用".into());
         }
+        // 先检查所有文件，再开始任何写入；每个 write_checked 仍会在写前再次核对。
         for file in &plan.files {
             if storage::read_config(Path::new(&file.path))? != file.before {
                 return Err("配置在预览后发生变化，已阻止写入，请重新预览".into());
@@ -214,6 +233,7 @@ impl<'a> Transaction<'a> {
             self.commit(next)
         })();
         if let Err(error) = operation {
+            // 目标替换或工作区提交失败都走同一补偿路径；冲突文件留给恢复界面处理。
             let failures = Self::restore_files(&plan.files);
             journal.status = if failures.is_empty() {
                 "recovered"
@@ -242,11 +262,13 @@ impl<'a> Transaction<'a> {
             return Err(error);
         }
         journal.status = "applied".into();
-        // Workspace commit is authoritative; recovery recognizes its transaction ID if this fails.
+        // 工作区提交已是成功依据；此处补写日志失败时，重启可凭相同事务 ID 确认完成。
         let _ = self.save_journal(&journal);
         Ok(())
     }
 
+    /// 确认目标路径和当前文本仍匹配记录后，用新事务写回旧文本。
+    /// 已经恢复的文件可跳过，发生后续修改的文件不能强制覆盖。
     pub(super) fn rollback(&mut self, journal_id: &str) -> Result<()> {
         let journal = self.load_journal(journal_id)?;
         if !["applied", "recovery-needed"].contains(&journal.status.as_str()) {
@@ -297,6 +319,7 @@ impl<'a> Transaction<'a> {
         })
     }
 
+    /// 对 recovery-needed 记录采用当前磁盘基线，保留服务库期望值供后续预览。
     pub(super) fn keep_recovery(&mut self, journal_id: &str) -> Result<()> {
         let mut journal = self.load_journal(journal_id)?;
         if journal.status != "recovery-needed" {
@@ -321,9 +344,10 @@ impl<'a> Transaction<'a> {
     }
 }
 
+/// 只更新与此目标有关的服务基线；不修改服务配置或期望分配列表。
 fn update_bindings(workspace: &mut Workspace, target_id: &str, entries: &BTreeMap<String, Value>) {
     for service in &mut workspace.services {
-        // Keep empty bindings: they record a managed entry that has been removed.
+        // raw=None 的绑定仍有意义：它记录该托管条目已不存在，不能直接删除此基线。
         if service.targets.iter().any(|id| id == target_id)
             || service.bindings.contains_key(target_id)
         {

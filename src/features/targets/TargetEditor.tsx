@@ -5,6 +5,7 @@ import { Modal, ErrorBox, ToolIcon } from "../../components";
 import { Select } from "../../Select";
 import type { Adapter, Target } from "../../types";
 
+/** 编辑单个目标草稿；target=null 时新建，真实路径约束与关联检查交给后端。 */
 export function TargetEditor({
   adapters,
   target,
@@ -30,6 +31,7 @@ export function TargetEditor({
   );
   const [error, setError] = useState("");
   const adapter = adapters.find((a) => a.id === value.adapterId)!;
+  /** 原生选择框只填入路径，不立即保存；用户取消时保留原草稿。 */
   async function choose() {
     try {
       const path = await open({
@@ -42,6 +44,7 @@ export function TargetEditor({
       setError(String(e));
     }
   }
+  /** 通过统一写入口保存；拒绝结果留在表单显示，成功后才关闭。 */
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (busy) return;

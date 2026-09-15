@@ -1,3 +1,4 @@
+/* 共享组件：工具图标、提示、原生弹窗、表单及代码块。功能特例在各功能样式中覆盖。 */
 .tool-icon {
   height: 26px;
   width: 26px;
@@ -32,6 +33,7 @@
   flex-shrink: 0;
   margin-top: 2px;
 }
+/* 原生对话框保留浏览器的模态与顶层行为，内容区独立滚动，页脚保持可操作。 */
 dialog {
   width: min(560px, calc(100vw - 60px));
   max-height: calc(100dvh - 50px);
@@ -94,6 +96,7 @@ dialog.wide {
 .modal-footer .muted {
   font-size: 11px;
 }
+/* 服务与目标编辑器共享字段间距、帮助文字与网格，不按业务复制同一套规则。 */
 label {
   display: block;
   font-size: 12px;
@@ -174,6 +177,7 @@ label small {
   background: #fbf6e9;
   border-color: #e9ddbe;
 }
+/* 配置仅作为预格式化文本展示；长行可换行，长内容在代码块内部滚动。 */
 .code {
   font:
     11px/1.8 Menlo,
@@ -191,6 +195,7 @@ label small {
   color: #6b7c59;
   margin: 0;
 }
+/* 独立确认类复选框；发现列表的选择样式由 targets.css 管理。 */
 .checkbox-line {
   display: flex;
   gap: 9px;

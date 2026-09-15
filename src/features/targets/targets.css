@@ -1,3 +1,4 @@
+/* 目标相关界面：路径说明、发现选择状态及目标设置列表；共用表单外观见 components.css。 */
 .path-label {
   font:
     10px/1.7 Menlo,
@@ -11,6 +12,7 @@
   border-radius: 7px;
   overflow: hidden;
 }
+/* 全选范围由组件过滤出的可导入条目决定，此处只负责布局与禁用提示。 */
 .discover-controls {
   display: flex;
   align-items: center;
@@ -88,6 +90,7 @@
   background: #e0ebd4;
   color: #465f34;
 }
+/* 不支持和已托管属于不同原因，使用独立视觉状态，不能混同为可选择项。 */
 .discover-item.is-unsupported {
   background: #faf5eb;
   box-shadow: inset 3px 0 #d9b67a;
@@ -114,6 +117,7 @@
 .discover-item.is-managed > svg {
   color: #7a8472;
 }
+/* 路径列表允许长绝对路径换行，避免挤压设置和发现操作。 */
 .tools-list {
   border: 1px solid #e0e7d5;
   border-radius: 7px;

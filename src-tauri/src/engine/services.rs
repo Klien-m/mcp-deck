@@ -1,8 +1,12 @@
+//! 服务库中的创建、分配、软删除与冲突选择。
+//! 函数修改调用方提供的草稿；批次失败后的丢弃和持久化由 Engine::update 负责。
+
 use super::targets::find_target;
 use crate::{adapters, model::*};
 use serde_json::Value;
 use std::collections::BTreeMap;
 
+/// 校验配置与展示字段；编辑保留 ID 和配置键，新建服务不自动分配目标。
 pub(super) fn save(workspace: &mut Workspace, input: ServiceInput) -> Result<String> {
     input.config.validate()?;
     if input.name.trim().is_empty()
@@ -54,6 +58,7 @@ pub(super) fn save(workspace: &mut Workspace, input: ServiceInput) -> Result<Str
     Ok(service_id)
 }
 
+/// 校验目标兼容性及同键占用，修改期望分配但保留上次同步绑定。
 pub(super) fn assign(
     workspace: &mut Workspace,
     service_id: &str,
@@ -67,6 +72,7 @@ pub(super) fn assign(
         .find(|s| s.id == service_id && !s.deleted)
         .ok_or("服务不存在")?;
     if enabled {
+        // 已取消分配但尚未应用的旧绑定仍占用配置键，不能被另一个服务抢占。
         if workspace.services.iter().any(|s| {
             s.id != service_id
                 && s.key == service.key
@@ -86,6 +92,7 @@ pub(super) fn assign(
         .iter_mut()
         .find(|s| s.id == service_id)
         .unwrap();
+    // 仅改期望分配；保留 bindings 才能在下次预览中识别需要移除的磁盘条目。
     service.targets.retain(|t| t != target_id);
     if enabled {
         service.targets.push(target_id.into());
@@ -93,6 +100,7 @@ pub(super) fn assign(
     Ok(())
 }
 
+/// 软删除时记住分配列表，undo 用其恢复；条目不会立即从工作区移除。
 pub(super) fn remove(workspace: &mut Workspace, service_id: &str, undo: bool) -> Result<()> {
     let service = workspace
         .services
@@ -110,6 +118,7 @@ pub(super) fn remove(workspace: &mut Workspace, service_id: &str, undo: bool) ->
     Ok(())
 }
 
+/// 以本次读取的目标条目更新基线；采用磁盘时同时更新可解码配置或取消分配。
 pub(super) fn resolve(
     workspace: &mut Workspace,
     target: &Target,
@@ -138,6 +147,7 @@ pub(super) fn resolve(
             }
         }
     }
+    // 保留服务库版本也要确认最新磁盘基线，随后才能生成不带冲突的新计划。
     service.bindings.insert(target_id.into(), Binding { raw });
     Ok(())
 }

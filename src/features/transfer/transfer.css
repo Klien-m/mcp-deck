@@ -1,8 +1,10 @@
+/* 导入内容编辑区和文件选择入口；导出代码展示复用公共 Code 样式。 */
 .transfer-code {
   width: 100%;
   margin-top: 12px;
   min-height: 260px;
 }
+/* 透明原生文件输入覆盖展示标签，保留文件选择能力及可访问性。 */
 .file-picker {
   display: inline-flex;
   align-items: center;

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import { RefreshCw } from "lucide-react";
 
+/** 固定外壳：顶部操作栏、三栏内容、底部状态及覆盖层；业务内容由插槽传入。 */
 export function WorkspaceLayout({
   children,
   overlays,

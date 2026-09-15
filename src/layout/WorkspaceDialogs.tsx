@@ -16,6 +16,7 @@ import type {
   TargetStatus,
 } from "../types";
 
+/** 互斥弹窗路由及其初始化数据；null 路由代表无弹窗，service/target 为 null 则表示新建。 */
 export type WorkspaceView =
   | { type: "service"; service: Service | null }
   | { type: "target"; target: Target | null }
@@ -36,7 +37,10 @@ type DialogActions = Pick<
   | "keepRecovery"
 >;
 
-// This is the composition boundary. Feature components receive only their own inputs/actions.
+/**
+ * 弹窗装配边界：把工作区动作裁剪为组件所需回调，并统一处理保存成功后的路由变化。
+ * 组件自行管理表单与读取状态，此处不复制快照，也不直接执行 IPC。
+ */
 export function WorkspaceDialogs({
   view,
   adapters,
@@ -66,6 +70,7 @@ export function WorkspaceDialogs({
   onServiceSaved: (id: string) => void;
   onImported: () => void;
 }) {
+  // 写操作未完成时保留弹窗；导出、发现等组件还会叠加自身的本地忙碌条件。
   const close = () => {
     if (!busy) onView(null);
   };
@@ -139,6 +144,7 @@ export function WorkspaceDialogs({
           onExported={close}
         />
       );
+    // 不用预览 ID 作为组件 key；计划刷新时沿用 Modal 实例，避免失焦或视觉闪烁。
     case "preview":
       return (
         preview && (

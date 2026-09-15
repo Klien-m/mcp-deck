@@ -9,6 +9,7 @@ import { native } from "../api";
 import { ToolIcon } from "../components";
 import type { Adapter } from "../types";
 
+/** 首次快照未就绪时展示加载或错误；浏览器环境明确提示需要桌面宿主。 */
 export function Startup({
   fatal,
   onRetry,
@@ -43,6 +44,7 @@ export function Startup({
   );
 }
 
+/** 当前筛选无可见服务时的入口引导；不据此推断整个工作区一定为空。 */
 export function EmptyWorkspace({
   adapters,
   filter,

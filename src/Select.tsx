@@ -3,6 +3,7 @@ import type { KeyboardEvent, ReactNode } from "react";
 import { createPortal } from "react-dom";
 import { Check, ChevronDown } from "lucide-react";
 
+/** value 是稳定选项身份；label 用于显示与键盘前缀搜索，detail/icon 仅辅助展示。 */
 type Option = {
   value: string;
   label: string;
@@ -10,6 +11,10 @@ type Option = {
   icon?: ReactNode;
 };
 
+/**
+ * 受控单选框：选中值归调用方，组件管理展开、键盘高亮、定位与焦点。
+ * 焦点保留在触发按钮，aria-activedescendant 指向高亮项，提交选择后才调用 onChange。
+ */
 export function Select({
   value,
   options,
@@ -27,6 +32,7 @@ export function Select({
   const trigger = useRef<HTMLButtonElement>(null);
   const popup = useRef<HTMLDivElement>(null);
   const menu = useRef<HTMLDivElement>(null);
+  // 只有键盘导航才自动滚到高亮项，防止用户手动滚动后被强制拉回选中位置。
   const activeSource = useRef<"keyboard" | "pointer">("keyboard");
   const typeahead = useRef({ text: "", at: 0 });
   const [open, setOpen] = useState(false);
@@ -40,6 +46,7 @@ export function Select({
   const selected = options.findIndex((option) => option.value === value);
   const current = options[selected];
 
+  /** 只调整菜单列表的滚动位置，不调用会连带滚动外层表单的 scrollIntoView。 */
   function revealOption(index: number) {
     const list = menu.current;
     const item = list?.children[index] as HTMLElement | undefined;
@@ -50,13 +57,15 @@ export function Select({
     }
   }
 
+  /** 键盘高亮立即可见；即使索引未变，也需要处理用户刚刚手动滚走的情况。 */
   function highlight(index: number) {
     activeSource.current = "keyboard";
     setActive(index);
-    // Keyboard navigation must also reveal an unchanged option after manual scrolling.
+    // 不能只依赖 active 变化触发的 effect，否则相同选项在手动滚动后不会被定位。
     revealOption(index);
   }
 
+  /** 从当前选项或指定索引展开，清除旧定位，等待布局测量后显示菜单。 */
   function show(index = Math.max(0, selected)) {
     if (disabled || !options.length) return;
     trigger.current?.focus();
@@ -65,6 +74,7 @@ export function Select({
     setOpen(true);
   }
 
+  /** 确认一个有效选项后关闭并恢复按钮焦点；值未变时不重复通知调用方。 */
   function choose(index: number) {
     const option = options[index];
     if (!option || disabled) return;
@@ -77,8 +87,10 @@ export function Select({
     if (disabled) setOpen(false);
   }, [disabled]);
 
+  // 在绘制前定位；窗口或外层滚动需要重测，菜单自身滚动不能引起重定位和跳回。
   useLayoutEffect(() => {
     if (!open) return;
+    /** 按视口剩余空间选择上下展开，限制宽高并保留边缘间距。 */
     function place() {
       const rect = trigger.current?.getBoundingClientRect();
       if (!rect) return;
@@ -95,6 +107,7 @@ export function Select({
         maxHeight,
       });
     }
+    /** 点击或焦点移到触发器／菜单以外时关闭；Portal 内节点也算菜单内部。 */
     function outside(event: Event) {
       const target = event.target as Node;
       if (
@@ -124,6 +137,10 @@ export function Select({
     if (open && activeSource.current === "keyboard") revealOption(active);
   }, [open, active, position?.maxHeight]);
 
+  /**
+   * 方向键循环高亮，Home/End 定位端点，Enter/空格确认，Escape 仅关闭当前菜单。
+   * 连续输入使用 600 ms 前缀缓冲；重复同一字符循环查找相同首字母。
+   */
   function keyboard(event: KeyboardEvent<HTMLButtonElement>) {
     if (disabled || !options.length) return;
     if (event.key === "Escape" && open) {
@@ -250,7 +267,7 @@ export function Select({
               ))}
             </div>
           </div>,
-          // Stay in the modal's top layer while escaping the scrolling form body.
+          // 挂入最近 dialog，既脱离表单滚动裁切，也保持在原生弹窗顶层内；主界面则挂到 body。
           trigger.current.closest("dialog") || document.body,
         )}
     </div>

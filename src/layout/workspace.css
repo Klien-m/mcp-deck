@@ -1,3 +1,4 @@
+/* 工作区外壳：顶部、侧栏、空状态、状态栏与全局反馈。业务列表和弹窗内容另行维护。 */
 .app-shell {
   height: 100dvh;
   min-height: 620px;
@@ -37,12 +38,14 @@
   font-size: 12px;
   padding: 6px 10px;
 }
+/* 三栏网格为导航、服务列表和详情留出各自空间；窄窗口调整见 responsive.css。 */
 .columns {
   display: grid;
   grid-template-columns: 216px 338px minmax(0, 1fr);
   flex: 1;
   min-height: 0;
 }
+/* 侧栏将工具导航与底部操作分开，工具项允许独立滚动。 */
 .sidebar {
   border-right: 1px solid var(--line);
   background: #f1f3ed;
@@ -156,6 +159,7 @@
   font-size: 11px;
   padding: 13px 11px 5px;
 }
+/* 无当前可见服务时的引导界面，同时适用于空服务库与空筛选。 */
 .welcome {
   display: flex;
   align-items: flex-start;
@@ -231,6 +235,7 @@
   align-items: center;
   gap: 6px;
 }
+/* 未打开业务弹窗时的全局错误，与短时成功通知保持独立。 */
 .floating-error {
   position: fixed;
   bottom: 46px;

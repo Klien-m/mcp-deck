@@ -1,4 +1,5 @@
-/* Shared select trigger and popup, including fields inside native dialogs. */
+/* 自定义 Select 的触发器和 Portal 菜单，兼容原生 dialog 顶层。
+ * 外层负责边框和圆角，内层列表独立滚动，防止滚动条切穿菜单边框。 */
 .deck-select {
   min-width: 0;
 }

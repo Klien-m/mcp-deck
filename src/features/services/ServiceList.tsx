@@ -3,6 +3,7 @@ import { Plus, Plug, Search, Upload, X } from "lucide-react";
 import { ToolIcon } from "../../components";
 import type { Service, TargetStatus } from "../../types";
 
+/** 受控服务列表；筛选、选择和导出范围由上层决定，本组件只维护搜索框引用。 */
 export function ServiceList({
   visible,
   selectedId,
@@ -35,6 +36,7 @@ export function ServiceList({
   onAdd: () => void;
 }) {
   const search = useRef<HTMLInputElement>(null);
+  // 仅主界面响应 Cmd/Ctrl+K，避免弹窗输入期间抢走焦点。
   useEffect(() => {
     const listener = (e: KeyboardEvent) => {
       if (

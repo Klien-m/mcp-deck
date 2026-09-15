@@ -1,4 +1,5 @@
-/* Shared foundations first; feature styles follow; responsive overrides stay last. */
+/* 唯一样式入口：公共基础 → 控件与组件 → 布局／功能 → 响应式覆盖。
+ * 导入顺序参与级联；新增功能样式放在 responsive.css 之前，避免窄窗口规则被覆盖。 */
 @import "./styles/base.css";
 @import "./Select.css";
 @import "./styles/components.css";

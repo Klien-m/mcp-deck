@@ -1,9 +1,11 @@
-//! Adapter capabilities, documentation and default target paths.
+//! 当前应用支持的客户端方言、能力和默认目标路径；不代表客户端运行时连接状态。
+
 use crate::model::{Result, Target, Transport};
 use serde::Serialize;
 use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+/// 配置字段约定；多个客户端可共享一个方言，避免按品牌重复实现同一转换。
 pub enum Dialect {
     Codex,
     Standard,
@@ -20,6 +22,7 @@ pub enum Dialect {
 
 #[derive(Debug, Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
+/// 前端可展示的适配能力及后端专用方言与路径候选；后两者不通过 IPC 暴露。
 pub struct Adapter {
     pub id: &'static str,
     pub name: &'static str,
@@ -35,6 +38,7 @@ pub struct Adapter {
     pub paths: Vec<&'static str>,
 }
 
+/// 集中定义支持矩阵；新增客户端时需同时检查 decode、encode 和文档根节点。
 pub fn registry() -> Vec<Adapter> {
     use Dialect::*;
     let records = [
@@ -80,6 +84,7 @@ pub fn registry() -> Vec<Adapter> {
         .collect()
 }
 
+/// 由稳定适配器 ID 查找能力，不根据用户可修改的目标名称推测格式。
 pub fn get(id: &str) -> Result<Adapter> {
     registry()
         .into_iter()
@@ -87,6 +92,7 @@ pub fn get(id: &str) -> Result<Adapter> {
         .ok_or_else(|| "未知适配器".into())
 }
 
+/// 每种适配器优先选已有候选文件，否则使用首选路径；实际创建留到用户应用时。
 pub fn default_targets(home: &Path) -> Vec<Target> {
     registry()
         .iter()
@@ -97,7 +103,7 @@ pub fn default_targets(home: &Path) -> Vec<Target> {
                 .find(|p| p.is_file())
                 .unwrap_or(&paths[0])
                 .clone();
-            // Never use custom process environment when a test home is selected.
+            // 指定隔离 home 时忽略真实进程的自定义工具路径，防止样例目标越出测试目录。
             if std::env::var_os("MCP_DECK_HOME").is_none()
                 && dirs::home_dir().as_deref() == Some(home)
             {

@@ -7,6 +7,10 @@ import { Code, ErrorBox, Modal, ToolIcon } from "../../components";
 import { Select } from "../../Select";
 import type { Adapter } from "../../types";
 
+/**
+ * 按格式、服务范围和脱敏选项生成预览，再通过原生保存框选择独立输出路径。
+ * 生成是只读请求，落盘委托 onSave；组件不自行维护工作区快照。
+ */
 export function ExportDialog({
   adapters,
   error: workspaceError,
@@ -38,6 +42,7 @@ export function ExportDialog({
   const requestId = useRef(0);
   const saveInProgress = useRef(false);
   const busy = loading || saving || workspaceBusy;
+  // 结果必须匹配当前全部选项；上层保持 serviceIds 引用，范围变化时旧结果立即失效。
   const transfer =
     result?.adapterId === adapterId &&
     result.serviceIds === serviceIds &&
@@ -45,6 +50,7 @@ export function ExportDialog({
       ? result.text
       : "";
 
+  // 每次重新生成递增代次，防止慢响应把已切换的格式或凭据显示模式覆盖回来。
   useEffect(() => {
     const id = ++requestId.current;
     setLoading(true);
@@ -69,6 +75,10 @@ export function ExportDialog({
   const close = () => {
     if (!busy && !saveInProgress.current) onClose();
   };
+  /**
+   * 本地锁覆盖“选择路径 → 写文件”整个过程，避免重复打开保存框或中途切换选项。
+   * 保存时后端按当前选项重新生成文本并校验目标保护规则，不直接信任显示文本。
+   */
   async function download() {
     if (busy || !transfer || saveInProgress.current) return;
     saveInProgress.current = true;

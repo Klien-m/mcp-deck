@@ -1,3 +1,4 @@
+/* 同步预览的差异、冲突处理和历史记录；状态文字由业务组件决定。 */
 .preview-summary {
   display: flex;
   align-items: center;
@@ -34,6 +35,7 @@
 .change-header .tag {
   margin-left: auto;
 }
+/* 并排展示磁盘现状与服务库期望；Code 自身负责长文本折行。 */
 .diff-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -62,6 +64,7 @@
 .change.conflict {
   border-color: #dfc88b;
 }
+/* 冲突仍可展示差异，但必须先通过业务按钮确认基线。 */
 .conflict-actions {
   padding: 12px 14px;
   background: #fcf6e8;
@@ -79,6 +82,7 @@
   font-size: 11px;
   margin-right: 7px;
 }
+/* 历史摘要、时间和目标路径的展示；是否允许恢复由后端状态与组件决定。 */
 .history-item {
   padding: 17px 16px;
   border: 1px solid #dce5ce;

@@ -1,4 +1,6 @@
-//! IPC request contract and application dispatch, independent of the desktop runtime.
+//! 前后端 IPC 契约：由 op 判别命令，字段名称与 src/api.ts 保持 camelCase 一致。
+//! 此层仅反序列化、调用用例和序列化结果，不依赖 Tauri 窗口或持有独立状态。
+
 use crate::{
     engine::Engine,
     model::{Result, ServiceInput, Target},
@@ -9,6 +11,7 @@ use std::path::PathBuf;
 
 #[derive(Deserialize)]
 #[serde(tag = "op", rename_all = "camelCase", rename_all_fields = "camelCase")]
+/// 完整请求集合；缺少必填字段或字段类型错误会在进入用例前被反序列化拒绝。
 pub enum Request {
     Snapshot,
     SaveService {
@@ -37,6 +40,7 @@ pub enum Request {
     SaveTarget {
         target: Target,
     },
+    /// includeDetails 返回同一计划的完整与脱敏两份差异，优先于兼容参数 reveal。
     Preview {
         #[serde(default)]
         reveal: bool,
@@ -73,6 +77,8 @@ pub enum Request {
     },
 }
 
+/// 将类型化请求转给 Engine；无返回内容的成功命令统一序列化为 JSON null。
+/// 业务错误透传给调用方，不能通过默认值将写入失败伪装为成功。
 pub fn dispatch(engine: &mut Engine, request: Request) -> Result<Value> {
     match request {
         Request::Snapshot => Ok(json!(engine.snapshot())),

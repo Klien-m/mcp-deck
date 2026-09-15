@@ -1,3 +1,4 @@
+/** 变更与历史状态的中文标签；状态键需与 IPC 协议一致，服务详情与同步弹窗共享变更文案。 */
 export const actionNames = {
   add: "新增配置",
   update: "更新配置",
