@@ -49,6 +49,9 @@ jobs:
           node-version: '24'
           cache: npm
 
+      - name: Set application version from tag
+        run: node scripts/set-release-version.mjs
+
       - uses: dtolnay/rust-toolchain@stable
         with:
           targets: ${{ matrix.target }}

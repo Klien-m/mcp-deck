@@ -118,7 +118,7 @@ clang -fobjc-arc -framework AppKit scripts/generate-dmg-background.m -o /tmp/mcp
 
 推送任意 Git 标签都会触发 [Release 工作流](.github/workflows/release.yml)。工作流从标签对应的提交构建四个架构、七个安装包，全部成功后发布 GitHub Release，并自动附上自上一个祖先标签以来的提交说明与完整变更链接；首次发布列出完整提交历史。
 
-版本由仓库配置决定。发布前同步更新 `package.json` / `package-lock.json`、`src-tauri/Cargo.toml` / `Cargo.lock` 和 `src-tauri/tauri.conf.json` 的应用版本并提交到 master。首个标签 `v0.1` 对应应用版本 `0.1.0`。例如发布下一版：
+构建时自动从标签提取版本，并同步 `package.json` / `package-lock.json`、`src-tauri/Cargo.toml` / `Cargo.lock` 和 `src-tauri/tauri.conf.json` 中的应用版本。支持 `v0.2` → `0.2.0`、`v0.2.1` → `0.2.1`，`v` 前缀可省略；其他格式（包括预发布后缀）会报错停止。版本修改只发生在 CI 工作目录，无需手动修改或提交这些配置；安装包内部版本和文件名使用同一版本，定制 DMG 也遵循该规则。例如发布下一版：
 
 ```bash
 git switch master
@@ -128,6 +128,8 @@ git push origin v0.1.1
 ```
 
 只有推送到 GitHub 的标签才会触发构建，且该标签必须包含工作流文件。失败时可在 Actions 中重新运行失败任务，或使用 `gh workflow run release.yml --ref v0.1.1` 在同一标签重新执行。构建过程只需要自动提供的 `GITHUB_TOKEN`；Release 发布任务声明 `contents: write` 权限。macOS 使用 ad hoc 签名，Windows 安装包不签名。
+
+已存在的标签重新运行时仍使用该标签内的工作流；自动提取版本的规则需在提交上述改动后创建的新标签中使用。可运行 `node --test scripts/set-release-version.test.mjs` 验证版本同步脚本。
 
 ## 真实配置验证
 
