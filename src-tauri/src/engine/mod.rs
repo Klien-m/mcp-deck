@@ -121,9 +121,8 @@ impl Engine {
                     target: t.clone(),
                     exists: Path::new(&t.path).is_file(),
                     count: result.as_ref().map(|(_, e)| e.len()).unwrap_or(0),
-                    error: result
-                        .err()
-                        .or_else(|| adapters::legacy_default_path_notice(t, &self.home)),
+                    error: result.err(),
+                    warning: adapters::legacy_default_path_notice(t, &self.home),
                 }
             })
             .collect();

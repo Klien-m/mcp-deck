@@ -58,16 +58,18 @@ export function ToolsDialog({
             <div>
               <strong>
                 {t.name}
-                <span className={`tag ${t.error ? "warning" : ""}`}>
+                <span className={`tag ${t.error || t.warning ? "warning" : ""}`}>
                   {t.error
-                    ? "需要检查"
-                    : t.exists
-                      ? `${t.count} 个配置`
-                      : "未发现配置"}
+                    ? "配置读取失败"
+                    : t.warning
+                      ? "配置路径待确认"
+                      : t.exists
+                        ? `${t.count} 个配置`
+                        : "未发现配置"}
                 </span>
               </strong>
               <code>{t.path}</code>
-              <small>{t.error || adapter(t.adapterId).note}</small>
+              <small>{t.error || t.warning || adapter(t.adapterId).note}</small>
             </div>
             <Button variant="outline"
               onClick={() => {

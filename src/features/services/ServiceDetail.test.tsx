@@ -74,6 +74,16 @@ describe("服务详情的待应用操作", () => {
     expect(screen.queryByText("配置已对齐")).toBeNull();
   });
 
+  it("可读的旧路径显示独立提醒和原因，不显示读取失败", () => {
+    render(<ServiceDetail {...callbacks()} service={service} adapters={[adapter]}
+      targets={[{ ...target, warning: "旧路径保留了已管理配置，请确认当前系统位置" }]}
+      changes={[]} busy={false} status="配置路径待确认" />);
+    expect(screen.getAllByText("配置路径待确认")).toHaveLength(2);
+    expect(screen.getByText("旧路径保留了已管理配置，请确认当前系统位置")).toBeTruthy();
+    expect(screen.queryByText(/配置读取失败/)).toBeNull();
+    expect(screen.queryByText("配置已对齐")).toBeNull();
+  });
+
   it("取消分配明确展示移除方向，只有用户切换才调用分配回调", () => {
     const handlers = callbacks();
     render(<ServiceDetail {...handlers} service={{ ...service, targets: [] }} adapters={[adapter]}

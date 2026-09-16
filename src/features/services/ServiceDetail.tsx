@@ -194,24 +194,27 @@ export function ServiceDetail({
                   <ToolIcon id={t.adapterId} />
                   <div>
                     <strong>{t.name}</strong>
-                    <small className={change || t.error ? "warning" : ""}>
+                    <small className={change || t.error || t.warning ? "warning" : ""}>
                       {stale
                         ? "状态待刷新 · 请重新读取配置"
                         : t.error
                           ? "配置读取失败 · 无法确认同步状态"
-                          : change?.conflict
-                            ? "外部配置变更 · 需要处理"
-                            : change
-                              ? `${describeChange(change)} · 待应用`
-                              : !compatible
-                                ? "不支持此配置中的传输方式或 cwd"
-                                : checked
-                                  ? "配置已对齐"
-                                  : "尚未分配"}
+                          : t.warning
+                            ? "配置路径待确认"
+                            : change?.conflict
+                              ? "外部配置变更 · 需要处理"
+                              : change
+                                ? `${describeChange(change)} · 待应用`
+                                : !compatible
+                                  ? "不支持此配置中的传输方式或 cwd"
+                                  : checked
+                                    ? "配置已对齐"
+                                    : "尚未分配"}
                     </small>
                     {!stale && change?.conflict && <small className="warning">{describeChange(change)}</small>}
                     {!stale && t.error && <small className="warning">{t.error}</small>}
-                    {!stale && !t.exists && !t.error && checked && <small>应用时创建配置文件</small>}
+                    {!stale && t.warning && <small className="warning">{t.warning}</small>}
+                    {!stale && !t.exists && !t.error && !t.warning && checked && <small>应用时创建配置文件</small>}
                     <code className="target-path">{t.path}</code>
                   </div>
                   <Switch

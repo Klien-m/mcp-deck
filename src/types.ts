@@ -60,6 +60,8 @@ export interface TargetStatus extends Target {
   exists: boolean;
   count: number;
   error: string | null;
+  /** 旧路径等兼容提示；不代表配置读取或解析失败。 */
+  warning?: string | null;
 }
 /** 与持久化日志兼容的状态；仅 recovery-needed 阻断新同步并允许选择保留磁盘。 */
 export type HistoryStatus =

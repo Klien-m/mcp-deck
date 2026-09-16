@@ -65,3 +65,31 @@ fn target_and_export_guards_reject_windows_aliases_of_protected_files() {
     assert_eq!(engine.workspace.revision, original_revision);
     assert!(!Path::new(&cursor.path).exists());
 }
+
+#[test]
+fn legacy_path_notice_does_not_turn_a_readable_configuration_into_a_read_error() {
+    let temp = tempfile::tempdir().unwrap();
+    let root = temp.path().canonicalize().unwrap();
+    let mut engine = Engine::open(root.join("FixtureHome"), root.join("Data")).unwrap();
+    let old_path = engine
+        .home
+        .join("Library/Application Support/Code/User/mcp.json");
+    std::fs::create_dir_all(old_path.parent().unwrap()).unwrap();
+    std::fs::write(&old_path, r#"{"servers":{"git":{"command":"node"}}}"#).unwrap();
+    engine
+        .workspace
+        .targets
+        .iter_mut()
+        .find(|target| target.id == "vscode")
+        .unwrap()
+        .path = old_path.to_string_lossy().into();
+    let target = engine
+        .snapshot()
+        .targets
+        .into_iter()
+        .find(|target| target.target.id == "vscode")
+        .unwrap();
+    assert_eq!(target.count, 1);
+    assert!(target.error.is_none());
+    assert!(target.warning.unwrap().contains("旧版 macOS"));
+}

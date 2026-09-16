@@ -81,12 +81,12 @@ export function Sidebar({
             key={t.id}
             className={`nav ${page === "workspace" && filter === t.id ? "active" : ""}`}
             onClick={() => onFilter(t.id)}
-            title={`${t.name} · ${t.error ? "配置需检查" : t.exists ? "已发现配置" : "未发现配置"}`}
+            title={`${t.name} · ${t.error ? "配置读取失败" : t.warning ? "配置路径待确认" : t.exists ? "已发现配置" : "未发现配置"}`}
           >
             <ToolIcon id={t.adapterId} />
             <span>{t.name}</span>
-            <small className={t.error ? "warning" : ""}>
-              {t.error ? "!" : t.serviceCount}
+            <small className={t.error || t.warning ? "warning" : ""}>
+              {t.error ? "!" : t.warning ? "待确认" : t.serviceCount}
             </small>
           </Button>
         ))}

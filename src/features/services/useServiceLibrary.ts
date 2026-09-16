@@ -61,6 +61,11 @@ export function useServiceLibrary(
         (s.targets.includes(t.id) || s.bindings[t.id]?.raw != null),
     );
     if (unreadable) return s.deleted ? "待移除 · 读取失败" : "配置读取失败";
+    const pathWarning = targets.some(
+      (t) => t.warning &&
+        (s.targets.includes(t.id) || s.bindings[t.id]?.raw != null),
+    );
+    if (pathWarning) return s.deleted ? "待移除 · 配置路径待确认" : "配置路径待确认";
     if (ownChanges.some((c) => c.conflict)) {
       return s.deleted ? "待移除 · 配置冲突" : "配置冲突";
     }

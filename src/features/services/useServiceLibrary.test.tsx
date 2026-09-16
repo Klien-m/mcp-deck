@@ -86,4 +86,17 @@ describe("服务库同步状态", () => {
     expect(result.current.status(service)).toBe("同步状态待确认");
     expect(result.current.status({ ...service, targets: [], bindings: {} })).toBe("尚未分配");
   });
+
+  it("旧路径提醒不是读取失败，真实读取错误优先于路径提醒", () => {
+    const warned = { ...target, warning: "旧配置路径需要确认" };
+    const { result, rerender } = renderHook(
+      ({ targets }) => useServiceLibrary([service], targets, []),
+      { initialProps: { targets: [warned] } },
+    );
+    expect(result.current.status(service)).toBe("配置路径待确认");
+    rerender({ targets: [{ ...warned, error: "无权读取文件" }] });
+    expect(result.current.status(service)).toBe("配置读取失败");
+    rerender({ targets: [{ ...warned, id: "other" }] });
+    expect(result.current.status(service)).toBe("配置已对齐");
+  });
 });

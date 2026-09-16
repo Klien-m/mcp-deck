@@ -15,6 +15,8 @@ pub struct TargetStatus {
     /// 成功解析的全部服务条目数，包含未托管项；失败时为 0，需同时检查 error。
     pub count: usize,
     pub error: Option<String>,
+    /// 路径兼容提示不等于读取失败，保留成功解析的计数和状态。
+    pub warning: Option<String>,
 }
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
