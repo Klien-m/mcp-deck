@@ -13,6 +13,62 @@ use std::{
 /// 单个目标配置的读取上限；工作区和完整备份采用各自的存储路径与限制。
 pub const MAX_CONFIG_BYTES: u64 = 2 * 1024 * 1024;
 
+// 仅用于 Windows 路径占用/目录边界比较，不返回可用于写入的替代路径。
+// 保存前仍必须经过 validate_path；此比较不会消除 .. 或跟随符号链接。
+fn windows_path_key(path: &Path) -> String {
+    let normalized = path.to_string_lossy().replace('\\', "/").to_lowercase();
+    let normalized = if let Some(unc) = normalized.strip_prefix("//?/unc/") {
+        format!("//{unc}")
+    } else {
+        normalized
+            .strip_prefix("//?/")
+            .unwrap_or(&normalized)
+            .to_owned()
+    };
+    // 路径比较忽略重复分隔符和当前目录组件；保留 UNC 根以及 .. 本身。
+    let root = if normalized.starts_with("//") {
+        "//"
+    } else if normalized.starts_with('/') {
+        "/"
+    } else {
+        ""
+    };
+    let components = normalized
+        .split('/')
+        .filter(|component| !component.is_empty() && *component != ".")
+        .collect::<Vec<_>>()
+        .join("/");
+    format!("{root}{components}")
+}
+
+pub(crate) fn same_path_for_platform(left: &Path, right: &Path, windows: bool) -> bool {
+    if windows {
+        windows_path_key(left) == windows_path_key(right)
+    } else {
+        left == right
+    }
+}
+
+/// Windows 文件名忽略大小写和分隔符写法；其他系统保留原生路径比较规则。
+pub fn same_path(left: &Path, right: &Path) -> bool {
+    same_path_for_platform(left, right, cfg!(windows))
+}
+
+fn path_is_within_for_platform(path: &Path, directory: &Path, windows: bool) -> bool {
+    if windows {
+        let path = windows_path_key(path);
+        let directory = windows_path_key(directory);
+        path == directory || path.starts_with(&format!("{directory}/"))
+    } else {
+        path.starts_with(directory)
+    }
+}
+
+/// 包含目录本身；按组件边界比较，data-copy 不能被误判为 data 的子目录。
+pub fn path_is_within(path: &Path, directory: &Path) -> bool {
+    path_is_within_for_platform(path, directory, cfg!(windows))
+}
+
 /// 创建应用所需目录，Unix 下限制为所有者可读写执行（0700）。
 pub fn private_dir(path: &Path) -> Result<()> {
     fs::create_dir_all(path).map_err(|e| format!("无法创建数据目录：{e}"))?;
@@ -171,4 +227,88 @@ pub fn write_checked(path: &Path, before: Option<&str>, after: Option<&str>) -> 
         return Err("文件写入后校验失败，可能存在外部并发修改".into());
     }
     Ok(())
+}
+
+#[cfg(test)]
+mod path_comparison_tests {
+    use super::*;
+
+    #[test]
+    fn windows_aliases_share_file_identity_without_changing_posix_case_rules() {
+        let path = Path::new("C:/Users/Alice/Code/User/mcp.json");
+        for alias in [
+            r"c:\users\alice\code\user\mcp.json",
+            r"\\?\C:\Users\Alice\Code\User\mcp.json",
+            r"c:\users\\alice\.\code\user\mcp.json",
+            "c:/users/./alice//code/user/mcp.json",
+        ] {
+            assert!(same_path_for_platform(path, Path::new(alias), true));
+            assert!(!same_path_for_platform(path, Path::new(alias), false));
+        }
+        assert!(same_path_for_platform(
+            Path::new(r"\\server\share\config.json"),
+            Path::new(r"\\?\UNC\SERVER\SHARE\.\\config.json"),
+            true
+        ));
+        assert!(!same_path_for_platform(
+            Path::new(r"\\server\share\config.json"),
+            Path::new(r"\server\share\config.json"),
+            true
+        ));
+        assert!(!same_path_for_platform(
+            Path::new("/Users/Alice/config.json"),
+            Path::new("/Users/alice/config.json"),
+            false
+        ));
+        assert!(!same_path_for_platform(
+            Path::new("C:/data/../config.json"),
+            Path::new("C:/config.json"),
+            true
+        ));
+    }
+
+    #[test]
+    fn windows_data_directory_guard_checks_case_insensitive_component_boundary() {
+        let directory = Path::new(r"C:\Users\Alice\MCP-Deck-Data");
+        assert!(path_is_within_for_platform(
+            Path::new("c:/users/alice/mcp-deck-data/workspace.json"),
+            directory,
+            true
+        ));
+        assert!(path_is_within_for_platform(
+            Path::new(r"\\?\C:\Users\Alice\MCP-Deck-Data\backups\entry.json"),
+            directory,
+            true
+        ));
+        assert!(path_is_within_for_platform(
+            Path::new("c:/users/alice/mcp-deck-data"),
+            directory,
+            true
+        ));
+        assert!(!path_is_within_for_platform(
+            Path::new("c:/users/alice/mcp-deck-data-copy/config.json"),
+            directory,
+            true
+        ));
+        assert!(!path_is_within_for_platform(
+            Path::new("D:/Users/Alice/MCP-Deck-Data/config.json"),
+            directory,
+            true
+        ));
+        assert!(path_is_within_for_platform(
+            Path::new(r"C:\Users\\Alice\.\MCP-Deck-Data\workspace.json"),
+            Path::new(r"C:\Users\Alice\MCP-Deck-Data\."),
+            true
+        ));
+        assert!(!path_is_within_for_platform(
+            Path::new(r"C:\Users\\Alice\.\MCP-Deck-Data-copy\workspace.json"),
+            directory,
+            true
+        ));
+        assert!(path_is_within_for_platform(
+            Path::new(r"\\server\share\.\\data\workspace.json"),
+            Path::new(r"\\?\UNC\SERVER\SHARE\data"),
+            true
+        ));
+    }
 }

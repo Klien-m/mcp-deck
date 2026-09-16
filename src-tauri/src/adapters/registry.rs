@@ -1,8 +1,7 @@
 //! 当前应用支持的客户端方言、能力和默认目标路径；不代表客户端运行时连接状态。
 
-use crate::model::{Result, Target, Transport};
+use crate::model::{Result, Transport};
 use serde::Serialize;
-use std::path::Path;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 /// 配置字段约定；多个客户端可共享一个方言，避免按品牌重复实现同一转换。
@@ -48,12 +47,12 @@ pub fn registry() -> Vec<Adapter> {
         ("gemini", "Gemini CLI", Gemini, "mcpServers", vec![".gemini/settings.json"], true, "https://geminicli.com/docs/tools/mcp-server/", "HTTP 使用 httpUrl，SSE 使用 url"),
         ("opencode", "OpenCode", OpenCode, "mcp", vec![".config/opencode/opencode.jsonc", ".config/opencode/opencode.json"], false, "https://opencode.ai/docs/mcp-servers/", "command 为数组；保留 OAuth 与 enabled 字段"),
         ("copilot", "GitHub Copilot CLI", Copilot, "mcpServers", vec![".copilot/mcp-config.json"], false, "https://docs.github.com/en/copilot/how-tos/copilot-cli/customize-copilot/add-mcp-servers", "用户级配置；登录由 Copilot 管理"),
-        ("vscode", "VS Code", VsCode, "servers", vec!["Library/Application Support/Code/User/mcp.json"], true, "https://code.visualstudio.com/docs/agents/reference/mcp-configuration", "默认 macOS 用户配置；其他 Profile 请指定路径"),
+        ("vscode", "VS Code", VsCode, "servers", vec!["Library/Application Support/Code/User/mcp.json"], true, "https://code.visualstudio.com/docs/agents/reference/mcp-configuration", "按系统定位用户配置；其他 Profile、便携版请指定路径"),
         ("windsurf", "Windsurf", Windsurf, "mcpServers", vec![".codeium/windsurf/mcp_config.json"], false, "https://docs.devin.ai/desktop/cascade/mcp", "HTTP 使用 serverUrl；保留原生认证表达式"),
         ("kiro", "Kiro", Url, "mcpServers", vec![".kiro/settings/mcp.json"], false, "https://kiro.dev/docs/mcp/configuration/", "适用于兼容此配置的 IDE / CLI；自定义 Agent 的继承规则另行检查"),
-        ("cline", "Cline", Cline, "mcpServers", vec![".cline/mcp.json", "Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"], false, "https://docs.cline.bot/mcp/mcp-overview", "CLI 与扩展可添加为不同配置目标；扩展位置以其设置页为准"),
+        ("cline", "Cline", Cline, "mcpServers", vec![".cline/data/settings/cline_mcp_settings.json", ".cline/mcp.json", "Library/Application Support/Code/User/globalStorage/saoudrizwan.claude-dev/settings/cline_mcp_settings.json"], false, "https://docs.cline.bot/getting-started/config", "优先共享配置，兼容已存在的旧 CLI / 扩展配置；自定义位置以设置页为准"),
         ("roo", "Roo Code", Roo, "mcpServers", vec!["Library/Application Support/Code/User/globalStorage/rooveterinaryinc.roo-cline/settings/mcp_settings.json"], true, "https://roocodeinc.github.io/Roo-Code/features/mcp/using-mcp-in-roo/", "默认 VS Code 扩展路径；其他宿主请指定其 mcp_settings.json"),
-        ("claude-desktop", "Claude Desktop", Desktop, "mcpServers", vec!["Library/Application Support/Claude/claude_desktop_config.json"], false, "https://modelcontextprotocol.io/docs/develop/connect-local-servers", "此文件适配本地 stdio；远程连接由 Desktop 自身管理"),
+        ("claude-desktop", "Claude Desktop", Desktop, "mcpServers", vec!["Library/Application Support/Claude/claude_desktop_config.json"], false, "https://modelcontextprotocol.io/docs/develop/connect-local-servers", "本地 stdio；Linux 仅发现已有配置，其他位置请从 Desktop 设置确认后指定"),
     ];
     records
         .into_iter()
@@ -90,40 +89,4 @@ pub fn get(id: &str) -> Result<Adapter> {
         .into_iter()
         .find(|a| a.id == id)
         .ok_or_else(|| "未知适配器".into())
-}
-
-/// 每种适配器优先选已有候选文件，否则使用首选路径；实际创建留到用户应用时。
-pub fn default_targets(home: &Path) -> Vec<Target> {
-    registry()
-        .iter()
-        .map(|adapter| {
-            let paths: Vec<_> = adapter.paths.iter().map(|p| home.join(p)).collect();
-            let mut path = paths
-                .iter()
-                .find(|p| p.is_file())
-                .unwrap_or(&paths[0])
-                .clone();
-            // 指定隔离 home 时忽略真实进程的自定义工具路径，防止样例目标越出测试目录。
-            if std::env::var_os("MCP_DECK_HOME").is_none()
-                && dirs::home_dir().as_deref() == Some(home)
-            {
-                if adapter.id == "codex" {
-                    if let Some(p) = std::env::var_os("CODEX_HOME") {
-                        path = Path::new(&p).join("config.toml");
-                    }
-                }
-                if adapter.id == "opencode" {
-                    if let Some(p) = std::env::var_os("XDG_CONFIG_HOME") {
-                        path = Path::new(&p).join("opencode/opencode.json");
-                    }
-                }
-            }
-            Target {
-                id: adapter.id.into(),
-                adapter_id: adapter.id.into(),
-                name: adapter.name.into(),
-                path: path.to_string_lossy().into(),
-            }
-        })
-        .collect()
 }

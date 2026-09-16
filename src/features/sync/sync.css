@@ -28,9 +28,7 @@
 }
 .change-header strong {
   font-weight: 500;
-}
-.change-header > span:first-of-type {
-  color: var(--muted-foreground);
+  overflow-wrap: anywhere;
 }
 .change-header .tag {
   margin-left: auto;

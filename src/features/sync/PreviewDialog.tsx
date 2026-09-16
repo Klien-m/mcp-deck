@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AlertTriangle, Check } from "lucide-react";
 import { Code, ErrorBox, Modal } from "../../components";
 import type { Preview } from "../../types";
-import { actionNames } from "./labels";
+import { actionNames, describeChange } from "./labels";
 
 /**
  * 展示同一计划的两份差异并提交应用或冲突选择；明文开关不触发 IPC。
@@ -15,6 +15,7 @@ export function PreviewDialog({
   preview,
   error,
   busy,
+  stale = false,
   onApply,
   onResolve,
   onClose: close,
@@ -22,6 +23,7 @@ export function PreviewDialog({
 }: {
   error: string;
   busy: boolean;
+  stale?: boolean;
   onClose: () => void;
   onApply: (id: string) => Promise<boolean>;
   onResolve: (
@@ -48,6 +50,7 @@ export function PreviewDialog({
             className="primary"
             disabled={
               busy ||
+              stale ||
               !!preview.errors.length ||
               !preview.changes.length ||
               preview.changes.some((c) => c.conflict)
@@ -62,11 +65,13 @@ export function PreviewDialog({
       }
     >
       <ErrorBox text={error} />
+      <ErrorBox text={stale ? "此预览已过期，请重新读取配置" : ""} />
       {preview.errors.map((e, i) => (
         <ErrorBox key={i} text={e} />
       ))}
       <label className="checkbox-line">
         <Checkbox
+          aria-label="显示完整差异"
           checked={revealPreview}
           disabled={busy}
           onCheckedChange={(checked) =>
@@ -79,7 +84,7 @@ export function PreviewDialog({
         <strong>{preview.changes.length}</strong>
         <span>项变更，涉及 {preview.fileCount} 个配置文件</span>
       </div>
-      {!preview.changes.length && !preview.errors.length && (
+      {!stale && !preview.changes.length && !preview.errors.length && (
         <div className="empty-card">
           <Check size={30} />
           <h3>配置已对齐</h3>
@@ -95,8 +100,7 @@ export function PreviewDialog({
           key={`${c.targetId}-${c.serviceId}-${i}`}
         >
           <div className="change-header">
-            <strong>{c.key}</strong>
-            <span>{c.targetName}</span>
+            <strong>{describeChange(c)}</strong>
             <Badge variant="secondary" className="tag">{actionNames[c.action]}</Badge>
           </div>
           <div className="diff-grid">
@@ -116,13 +120,13 @@ export function PreviewDialog({
                 {c.message}
               </p>
               <Button variant="outline"
-                disabled={busy}
+                disabled={busy || stale}
                 onClick={() => onResolve(c.serviceId, c.targetId, true)}
               >
                 采用磁盘版本
               </Button>
               <Button variant="outline"
-                disabled={busy}
+                disabled={busy || stale}
                 onClick={() => onResolve(c.serviceId, c.targetId, false)}
               >
                 保留服务库版本

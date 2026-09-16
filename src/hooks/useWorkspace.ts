@@ -37,7 +37,10 @@ export function useWorkspace({
   // fatal 记录启动失败，error 记录交互失败；存在旧数据时仍保留可见界面。
   const [fatal, setFatal] = useState("");
   const [error, setError] = useState("");
+  const [refreshWarning, setRefreshWarning] = useState("");
   const [busy, setBusy] = useState(false);
+  // 写入成功后旧快照不可继续用于变更；只有完整读取成功才能解除。
+  const stale = useRef(false);
   // ref 同步设锁，避免同一渲染内的连点绕过异步更新的 busy。
   const operation = useRef(false);
   // 递增代次只抑制过期结果与后续请求，不会取消已经发往后端的 IPC。
@@ -53,6 +56,8 @@ export function useWorkspace({
     if (id === refreshId.current) {
       setData(snapshot);
       setPreview(nextPreview);
+      stale.current = false;
+      setRefreshWarning("");
     }
   }, []);
 
@@ -93,25 +98,36 @@ export function useWorkspace({
   }
 
   /**
-   * 先执行命令再刷新展示。刷新失败也会返回失败，但不能据此认定之前的写入已回滚。
-   * 因此这里不自动重试命令，避免新建或导入被重复执行。
+   * 后端已提交的结果不受随后读取失败影响；返回成功让表单关闭，避免重复新建／导入。
+   * 刷新失败独立提示并锁住后续变更，重试入口只重新读取，不重放写操作。
    */
   function mutate<K extends Mutation>(
     op: K,
     args: CommandArgs<K>,
     message: string,
-  ) {
+  ): Promise<Outcome<CommandResult<K>>> {
+    if (stale.current) {
+      setError("当前状态尚未刷新，请先重新读取配置，再进行变更。");
+      return Promise.resolve({ ok: false });
+    }
     return run<CommandResult<K>>(async () => {
       const value = await request(op, args);
       // 独立导出不改工作区，无需刷新或替换当前同步计划。
-      if (op !== "saveExport") await refresh(includeDetails);
+      if (op !== "saveExport") {
+        stale.current = true;
+        try {
+          await refresh(includeDetails);
+        } catch {
+          setRefreshWarning(`${message}。界面状态刷新失败，请重新读取配置，无需重复操作。`);
+        }
+      }
       return value;
     }, message);
   }
 
   // 对外返回具体业务方法；保存服务返回 ID，其余动作返回是否完成，供弹窗决定是否关闭。
   const actions = {
-    /** 保存并刷新后返回服务 ID；失败或被锁拒绝返回 null，保留编辑器草稿。 */
+    /** 写入成功即返回服务 ID；仅写入失败或被锁拒绝返回 null，保留编辑器草稿。 */
     async saveService(input: ServiceInput) {
       const result = await mutate("saveService", { input }, "服务已保存");
       return result.ok ? result.value : null;
@@ -194,12 +210,20 @@ export function useWorkspace({
     async reload() {
       setFatal("");
       const result = await run(() => refresh(includeDetails), "已重新读取配置");
+      if (!result.ok && data && !operation.current) {
+        stale.current = true;
+        setRefreshWarning((current) => current || "重新读取配置失败，当前显示为上次状态。请重新读取后再进行变更。");
+      }
       return result.ok;
     },
     /** 打开预览前获取同计划的完整与脱敏数据，持锁期间阻止其他写操作。 */
     async loadPreview() {
       return (
         await run(async () => {
+          if (stale.current) {
+            await refresh(true);
+            return;
+          }
           const id = refreshId.current;
           const nextPreview = await request("preview", {
             includeDetails: true,
@@ -215,6 +239,7 @@ export function useWorkspace({
     preview,
     fatal,
     error,
+    refreshWarning,
     busy,
     clearError: () => setError(""),
     actions,

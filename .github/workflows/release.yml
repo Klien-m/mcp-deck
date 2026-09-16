@@ -83,6 +83,16 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Core regression before packaging
+        run: cargo test --manifest-path src-tauri/Cargo.toml --no-default-features --locked
+
+      - name: UI regression before packaging
+        run: npm run test:ui --if-present
+
+      - name: Release version regression
+        if: hashFiles('scripts/set-release-version.test.mjs') != ''
+        run: node --test scripts/set-release-version.test.mjs
+
       - name: Configure macOS signing
         if: runner.os == 'macOS'
         run: echo 'APPLE_SIGNING_IDENTITY=-' >> "$GITHUB_ENV"

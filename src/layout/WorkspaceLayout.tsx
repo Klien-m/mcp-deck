@@ -5,6 +5,8 @@ import { RefreshCw } from "lucide-react";
 /** 固定外壳：顶部操作栏、三栏内容、底部状态及覆盖层；业务内容由插槽传入。 */
 export function WorkspaceLayout({
   page,
+  version,
+  refreshWarning,
   children,
   overlays,
   isolated,
@@ -16,6 +18,8 @@ export function WorkspaceLayout({
   onPreview,
 }: {
   page: "workspace" | "settings";
+  version: string;
+  refreshWarning: string;
   children: ReactNode;
   overlays: ReactNode;
   isolated: boolean;
@@ -30,7 +34,7 @@ export function WorkspaceLayout({
     <div className="app-shell">
       <header className="topbar">
         <span className="topbar-title">
-          MCP Deck <span className="version-chip">0.1 · 内部试用</span>
+          MCP Deck <span className="version-chip">{version} · 内部试用</span>
         </span>
         <div className="toolbar">
           <span className="muted">
@@ -51,6 +55,14 @@ export function WorkspaceLayout({
           </Button>
         </div>
       </header>
+      {refreshWarning && (
+        <div className="refresh-warning" role="alert">
+          <span>{refreshWarning}</span>
+          <Button variant="outline" size="sm" disabled={busy} onClick={onRefresh}>
+            重新读取配置
+          </Button>
+        </div>
+      )}
       <main className={`columns ${page === "settings" ? "settings-layout" : ""}`}>{children}</main>
       <footer className="statusbar">
         <span>
@@ -58,7 +70,9 @@ export function WorkspaceLayout({
           {isolated ? "隔离测试目录" : "本地工作区"} · 配置变更需手动应用
         </span>
         <span>
-          {issueCount
+          {refreshWarning
+            ? "界面状态待刷新"
+            : issueCount
             ? `${issueCount} 个配置问题`
             : busy
               ? "正在处理…"

@@ -17,21 +17,20 @@ pub(super) fn save(workspace: &mut Workspace, data_dir: &Path, mut target: Targe
         .collect::<PathBuf>()
         .to_string_lossy()
         .into();
-    if Path::new(&target.path).starts_with(data_dir) {
+    if storage::path_is_within(Path::new(&target.path), data_dir) {
         return Err("目标配置不能位于 MCP Deck 数据目录内".into());
     }
     if target.name.trim().is_empty() || target.name.len() > 100 {
         return Err("请输入目标名称（不超过 100 字节）".into());
     }
-    if workspace
-        .targets
-        .iter()
-        .any(|t| t.id != target.id && t.path == target.path)
-    {
+    if workspace.targets.iter().any(|t| {
+        t.id != target.id && storage::same_path(Path::new(&t.path), Path::new(&target.path))
+    }) {
         return Err("该路径已由另一个目标管理".into());
     }
     if let Some(old) = workspace.targets.iter_mut().find(|t| t.id == target.id) {
-        if (old.path != target.path || old.adapter_id != target.adapter_id)
+        if (!storage::same_path(Path::new(&old.path), Path::new(&target.path))
+            || old.adapter_id != target.adapter_id)
             && workspace.services.iter().any(|s| {
                 s.targets.contains(&target.id)
                     || s.bindings.get(&target.id).is_some_and(|b| b.raw.is_some())

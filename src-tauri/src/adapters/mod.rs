@@ -3,8 +3,10 @@
 
 mod codec;
 mod document;
+mod paths;
 mod registry;
 
 pub use codec::{decode, encode};
 pub use document::{parse, patch};
-pub use registry::{default_targets, get, registry, Adapter, Dialect};
+pub use paths::{default_targets, legacy_default_path_notice, migrate_default_targets};
+pub use registry::{get, registry, Adapter, Dialect};

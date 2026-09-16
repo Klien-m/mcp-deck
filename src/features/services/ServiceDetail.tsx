@@ -3,7 +3,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { useEffect, useRef, useState } from "react";
-import { Plug, Trash2, ShieldCheck } from "lucide-react";
+import { Plug, Trash2, ShieldCheck, Undo2 } from "lucide-react";
 import { request } from "../../api";
 import { Code, ErrorBox, ToolIcon } from "../../components";
 import type {
@@ -14,7 +14,8 @@ import type {
   TargetStatus,
 } from "../../types";
 
-import { actionNames } from "../sync/labels";
+import { describeChange } from "../sync/labels";
+import { DiagnosticReport } from "./DiagnosticReport";
 
 /**
  * 展示一个服务的概览、公共配置与静态检查；changes 必须已由上层过滤到本服务。
@@ -26,9 +27,11 @@ export function ServiceDetail({
   targets,
   changes,
   busy,
+  stale = false,
   status,
   onAssign,
   onRemove,
+  onUndoRemove,
   onEdit,
   onExport,
   onRemoved,
@@ -38,9 +41,11 @@ export function ServiceDetail({
   targets: TargetStatus[];
   changes: Change[];
   busy: boolean;
+  stale?: boolean;
   status: string;
   onAssign: (targetId: string, enabled: boolean) => Promise<boolean>;
   onRemove: () => Promise<boolean>;
+  onUndoRemove: () => Promise<boolean>;
   onEdit: (service: Service) => void;
   onExport: (ids: string[]) => void;
   onRemoved: (id: string) => void;
@@ -48,13 +53,18 @@ export function ServiceDetail({
   const [tab, setTab] = useState("overview");
   const [checkState, setCheckState] = useState<{
     serviceId: string;
+    configVersion: string;
     result: Checks;
   } | null>(null);
   const [checkError, setCheckError] = useState("");
   const requestId = useRef(0);
-  // 同时绑定服务 ID 与请求代次，避免切换服务后短暂显示上一项的检查结果。
+  // 只在内存比较配置内容；同 ID 的磁盘版本替换也会使旧检查失效，不输出配置快照。
+  const configVersion = JSON.stringify(service.config);
+  // 同时绑定服务、配置与请求代次，避免下一次 effect 执行前闪现过期检查结果。
   const checks =
-    checkState?.serviceId === service.id ? checkState.result : null;
+    checkState?.serviceId === service.id && checkState.configVersion === configVersion
+      ? checkState.result
+      : null;
   const adapter = (id: string) => adapters.find((a) => a.id === id)!;
 
   useEffect(() => {
@@ -64,7 +74,7 @@ export function ServiceDetail({
     return () => {
       requestId.current++;
     };
-  }, [service.id]);
+  }, [service.id, configVersion]);
 
   /** 重新检查时清除旧结果，只接受最后一次请求；检查本身不启动或连接服务。 */
   async function checkService() {
@@ -75,7 +85,7 @@ export function ServiceDetail({
     setCheckError("");
     try {
       const result = await request("checks", { serviceId });
-      if (id === requestId.current) setCheckState({ serviceId, result });
+      if (id === requestId.current) setCheckState({ serviceId, configVersion, result });
     } catch (e) {
       if (id === requestId.current) setCheckError(String(e));
     }
@@ -94,11 +104,11 @@ export function ServiceDetail({
           </div>
         </div>
         <div className="inline">
-          <Button variant="outline" onClick={() => onExport([service.id])}>导出</Button>
+          <Button variant="outline" disabled={service.deleted} onClick={() => onExport([service.id])}>导出</Button>
           <Button variant="ghost" size="icon-sm"
             className="icon-button danger"
             aria-label={`移除 ${service.name}`}
-            disabled={busy}
+            disabled={busy || stale || service.deleted}
             onClick={async () => {
               if (await onRemove()) onRemoved(service.id);
             }}
@@ -107,6 +117,17 @@ export function ServiceDetail({
           </Button>
         </div>
       </div>
+      {service.deleted && (
+        <div className="callout warn removal-notice" role="status">
+          <div>
+            <strong>{stale ? "移除状态待刷新" : "待移除"}</strong>
+            <p>{stale ? "请重新读取配置后确认移除结果，无需重复操作。" : "确认同步后才会从目标配置文件移除此服务。应用前可以撤销。"}</p>
+          </div>
+          <Button variant="outline" disabled={busy || stale} onClick={() => void onUndoRemove()}>
+            <Undo2 size={15} />撤销移除
+          </Button>
+        </div>
+      )}
       <Tabs value={tab} onValueChange={(next) => {
         if (next === "checks") void checkService();
         else setTab(next);
@@ -119,7 +140,7 @@ export function ServiceDetail({
         <TabsContent value="overview">
           <div className="section-heading">
             <h3>服务配置</h3>
-            <Button variant="ghost" className="text-button" onClick={() => onEdit(service)}>
+            <Button variant="ghost" className="text-button" disabled={busy || stale || service.deleted} onClick={() => onEdit(service)}>
               编辑配置
             </Button>
           </div>
@@ -145,8 +166,12 @@ export function ServiceDetail({
               <code>{service.config.command || service.config.url}</code>
             </div>
             <div>
-              <span>分配状态</span>
-              <strong>{status}</strong>
+              <span>配置文件状态</span>
+              <strong>{stale ? "状态待刷新" : status}</strong>
+            </div>
+            <div>
+              <span>连接与加载</span>
+              <strong>未检测 · 需在目标工具确认</strong>
             </div>
           </div>
           <div className="section-heading">
@@ -158,7 +183,7 @@ export function ServiceDetail({
           <div className="assignment">
             {targets.map((t) => {
               const a = adapter(t.adapterId);
-              const checked = service.targets.includes(t.id);
+              const checked = !service.deleted && service.targets.includes(t.id);
               // 界面兼容性只决定能否新增分配；已有不兼容分配仍允许取消，后端会再次校验。
               const compatible =
                 a.transports.includes(service.config.transport) &&
@@ -169,24 +194,30 @@ export function ServiceDetail({
                   <ToolIcon id={t.adapterId} />
                   <div>
                     <strong>{t.name}</strong>
-                    <small className={change ? "warning" : ""}>
-                      {!compatible
-                        ? "不支持此配置中的传输方式或 cwd"
-                        : change?.conflict
-                          ? "外部配置变更 · 需要处理"
-                          : change
-                            ? `${actionNames[change.action]} · 待应用`
-                            : checked
-                              ? "配置已对齐 · 加载状态由客户端确认"
-                              : t.exists
-                                ? "未分配"
-                                : "未发现配置 · 应用时创建文件"}
+                    <small className={change || t.error ? "warning" : ""}>
+                      {stale
+                        ? "状态待刷新 · 请重新读取配置"
+                        : t.error
+                          ? "配置读取失败 · 无法确认同步状态"
+                          : change?.conflict
+                            ? "外部配置变更 · 需要处理"
+                            : change
+                              ? `${describeChange(change)} · 待应用`
+                              : !compatible
+                                ? "不支持此配置中的传输方式或 cwd"
+                                : checked
+                                  ? "配置已对齐"
+                                  : "尚未分配"}
                     </small>
+                    {!stale && change?.conflict && <small className="warning">{describeChange(change)}</small>}
+                    {!stale && t.error && <small className="warning">{t.error}</small>}
+                    {!stale && !t.exists && !t.error && checked && <small>应用时创建配置文件</small>}
+                    <code className="target-path">{t.path}</code>
                   </div>
                   <Switch
                     checked={checked}
                     aria-label={`${service.name} 分配到 ${t.name}`}
-                    disabled={busy || (!compatible && !checked)}
+                    disabled={busy || stale || service.deleted || (!compatible && !checked)}
                     onCheckedChange={(enabled) => void onAssign(t.id, enabled)}
                   />
                 </div>
@@ -201,7 +232,7 @@ export function ServiceDetail({
         <TabsContent value="json">
           <div className="section-heading">
             <h3>服务公共配置</h3>
-            <Button variant="ghost" className="text-button" onClick={() => onEdit(service)}>
+            <Button variant="ghost" className="text-button" disabled={busy || stale || service.deleted} onClick={() => onEdit(service)}>
               编辑完整配置
             </Button>
           </div>
@@ -230,22 +261,7 @@ export function ServiceDetail({
           {checkError ? (
             <ErrorBox text={checkError} />
           ) : checks ? (
-            <>
-              <div className={`callout ${checks.issues.length ? "warn" : ""}`}>
-                <strong>
-                  {checks.issues.length ? "有需要确认的配置" : "字段检查通过"}
-                </strong>
-                {checks.issues.map((i, n) => (
-                  <p key={n}>{i}</p>
-                ))}
-                {checks.executable && (
-                  <p>
-                    发现命令：<code>{checks.executable}</code>
-                  </p>
-                )}
-              </div>
-              <p className="hint">{checks.note}</p>
-            </>
+            <DiagnosticReport result={checks} />
           ) : (
             <p className="muted">正在检查…</p>
           )}

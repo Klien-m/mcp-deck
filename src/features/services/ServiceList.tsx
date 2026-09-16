@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { useEffect, useRef } from "react";
-import { Plus, Plug, Search, Upload, X } from "lucide-react";
+import { Plus, Plug, Search, Trash2, Upload, X } from "lucide-react";
 import { ToolIcon } from "../../components";
 import type { Service, TargetStatus } from "../../types";
 
@@ -109,7 +109,7 @@ export function ServiceList({
       <div className="service-list">
         {visible.map((s) => (
           <Button variant="ghost"
-            className={`service ${s.id === selectedId ? "selected" : ""}`}
+            className={`service ${s.id === selectedId ? "selected" : ""} ${s.deleted ? "service-removing" : ""}`}
             key={s.id}
             aria-pressed={s.id === selectedId}
             onClick={() => {
@@ -117,7 +117,7 @@ export function ServiceList({
             }}
           >
             <span className="service-icon">
-              <Plug size={20} />
+              {s.deleted ? <Trash2 size={20} /> : <Plug size={20} />}
             </span>
             <div className="service-content">
               <div className="service-name">

@@ -37,11 +37,11 @@ pub(super) fn save_export(
     path: &Path,
 ) -> Result<()> {
     storage::validate_path(path)?;
-    if path.starts_with(data_dir)
+    if storage::path_is_within(path, data_dir)
         || workspace
             .targets
             .iter()
-            .any(|target| Path::new(&target.path) == path)
+            .any(|target| storage::same_path(Path::new(&target.path), path))
     {
         return Err("导出不能覆盖数据目录或正在管理的配置，请选择其他文件".into());
     }

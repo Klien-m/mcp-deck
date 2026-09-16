@@ -70,6 +70,10 @@ impl Engine {
             _lock: lock,
         };
         engine.transact(|transaction| transaction.recover())?;
+        let mut next = engine.workspace.clone();
+        if adapters::migrate_default_targets(&mut next, &engine.home) {
+            engine.commit(next)?;
+        }
         engine.save()?;
         Ok(engine)
     }
@@ -117,7 +121,9 @@ impl Engine {
                     target: t.clone(),
                     exists: Path::new(&t.path).is_file(),
                     count: result.as_ref().map(|(_, e)| e.len()).unwrap_or(0),
-                    error: result.err(),
+                    error: result
+                        .err()
+                        .or_else(|| adapters::legacy_default_path_notice(t, &self.home)),
                 }
             })
             .collect();

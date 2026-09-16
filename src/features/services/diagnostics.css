@@ -1,0 +1,71 @@
+.diagnostic-summary {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding: 16px;
+  background: var(--muted);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+.diagnostic-summary p,
+.diagnostic-command > span {
+  margin-top: 5px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+}
+.diagnostic-connection {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  color: var(--muted-foreground);
+  font-size: 12px;
+  white-space: nowrap;
+}
+.diagnostic-items {
+  list-style: none;
+  margin: 12px 0;
+  padding: 0;
+}
+.diagnostic-items li {
+  display: flex;
+  gap: 10px;
+  padding: 13px 0;
+  border-bottom: 1px solid var(--border);
+}
+.diagnostic-items li > svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+  color: var(--muted-foreground);
+}
+.diagnostic-items li[data-level="error"] > svg {
+  color: var(--destructive);
+}
+.diagnostic-items p {
+  margin: 0;
+  font-size: 13px;
+  overflow-wrap: anywhere;
+}
+.diagnostic-level {
+  margin-right: 8px;
+  font-size: 11px;
+  color: var(--muted-foreground);
+}
+.diagnostic-items small {
+  display: block;
+  margin-top: 5px;
+  line-height: 1.6;
+  color: var(--muted-foreground);
+}
+.diagnostic-command {
+  display: grid;
+  gap: 5px;
+  padding: 12px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+.diagnostic-command code {
+  overflow-wrap: anywhere;
+  font-size: 12px;
+}

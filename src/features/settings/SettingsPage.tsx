@@ -10,10 +10,10 @@ import { ErrorBox } from "@/components";
 const themes = [
   { value: "light", label: "浅色", detail: "明亮、清晰，适合日间工作", icon: Sun },
   { value: "dark", label: "深色", detail: "柔和炭灰，减少暗光下的眩光", icon: Moon },
-  { value: "system", label: "跟随系统", detail: "随 macOS 外观自动切换", icon: Monitor },
+  { value: "system", label: "跟随系统", detail: "随系统外观自动切换", icon: Monitor },
 ] as const;
 
-export function SettingsPage({ onBack }: { onBack: () => void }) {
+export function SettingsPage({ onBack, version = "—" }: { onBack: () => void; version?: string }) {
   const { theme, resolvedTheme, setTheme, palette, setPalette, appearanceError } = useTheme();
   return (
     <section className="preferences" aria-label="偏好设置">
@@ -67,7 +67,7 @@ export function SettingsPage({ onBack }: { onBack: () => void }) {
             </div>
           </CardContent>
         </Card>
-        <div className="preferences-about"><span>MCP Deck <Badge variant="outline">0.1</Badge></span><span>一个服务库，连接你的 AI 工具。</span></div>
+        <div className="preferences-about"><span>MCP Deck <Badge variant="outline">{version}</Badge></span><span>一个服务库，连接你的 AI 工具。</span></div>
       </div>
     </section>
   );

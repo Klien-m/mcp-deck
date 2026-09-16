@@ -53,6 +53,7 @@ export function WorkspaceDialogs({
   preview,
   error,
   busy,
+  stale,
   actions,
   onView,
   onClearError,
@@ -67,6 +68,7 @@ export function WorkspaceDialogs({
   preview: Preview | null;
   error: string;
   busy: boolean;
+  stale: boolean;
   actions: DialogActions;
   onView: (view: WorkspaceView | null) => void;
   onClearError: () => void;
@@ -163,6 +165,7 @@ export function WorkspaceDialogs({
         preview && (
           <PreviewDialog
             {...common}
+            stale={stale}
             preview={preview}
             onApply={actions.apply}
             onResolve={actions.resolve}

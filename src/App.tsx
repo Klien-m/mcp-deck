@@ -8,6 +8,7 @@ import { ServiceDetail } from "./features/services/ServiceDetail";
 import { ServiceList } from "./features/services/ServiceList";
 import { useServiceLibrary } from "./features/services/useServiceLibrary";
 import { useWorkspace } from "./hooks/useWorkspace";
+import { useAppVersion } from "./hooks/useAppVersion";
 import { Sidebar } from "./layout/Sidebar";
 import { WorkspaceLayout } from "./layout/WorkspaceLayout";
 import { EmptyWorkspace, Startup } from "./layout/WorkspaceStates";
@@ -26,7 +27,8 @@ export default function App() {
   const [view, setView] = useState<WorkspaceView | null>(null);
   const [toast, setToast] = useState("");
   const [undo, setUndo] = useState("");
-  const { data, preview, fatal, error, busy, clearError, actions } =
+  const version = useAppVersion();
+  const { data, preview, fatal, error, refreshWarning, busy, clearError, actions } =
     useWorkspace({
       includeDetails: view?.type === "preview",
       onNotice: (message) => {
@@ -38,6 +40,7 @@ export default function App() {
     data?.workspace.services ?? emptyServices,
     data?.targets ?? emptyTargets,
     preview?.changes ?? emptyChanges,
+    !!preview?.errors.length || !!refreshWarning,
   );
 
   useEffect(() => {
@@ -63,7 +66,7 @@ export default function App() {
   if (!data) return <Startup fatal={fatal || error} onRetry={actions.reload} />;
   // 由持久化状态决定首次引导，避免刷新、StrictMode 或空服务库重复触发。
   const activeView: WorkspaceView | null =
-    view ?? (data.workspace.onboardingComplete ? null : { type: "onboarding" });
+    view ?? (data.workspace.onboardingComplete || refreshWarning ? null : { type: "onboarding" });
   const { service } = library;
   const discover = () =>
     show({
@@ -73,6 +76,8 @@ export default function App() {
   return (
     <WorkspaceLayout
       page={page}
+      version={version}
+      refreshWarning={refreshWarning}
       isolated={data.isolated}
       busy={busy}
       pendingCount={preview?.changes.length || 0}
@@ -119,6 +124,7 @@ export default function App() {
             preview={preview}
             error={error}
             busy={busy}
+            stale={!!refreshWarning}
             actions={actions}
             onView={show}
             onClearError={clearError}
@@ -134,7 +140,7 @@ export default function App() {
         filter={library.filter}
         onFilter={(filter) => { library.setFilter(filter); setPage("workspace"); }}
         serviceCount={library.services.length}
-        pendingCount={preview?.changes.length || 0}
+        pendingCount={library.pendingIds.size}
         toolTargets={library.toolTargets}
         detected={data.targets.filter((t) => t.exists).length}
         onDiscover={discover}
@@ -142,13 +148,13 @@ export default function App() {
         onHistory={() => show({ type: "history" })}
         onTools={() => show({ type: "tools" })}
       />
-      {page === "settings" ? <SettingsPage onBack={() => setPage("workspace")} /> : <>
+      {page === "settings" ? <SettingsPage version={version} onBack={() => setPage("workspace")} /> : <>
       <ServiceList
         visible={library.visible}
         selectedId={service?.id}
         targets={data.targets}
         pendingIds={library.pendingIds}
-        status={library.status}
+        status={(service) => refreshWarning ? "状态待刷新" : library.status(service)}
         filter={library.filter}
         query={library.query}
         serviceCount={library.services.length}
@@ -169,12 +175,14 @@ export default function App() {
             changes={
               preview?.changes.filter((c) => c.serviceId === service.id) || []
             }
-            busy={busy}
-            status={library.status(service)}
+            busy={busy || !!refreshWarning}
+            stale={!!refreshWarning}
+            status={refreshWarning ? "状态待刷新" : library.status(service)}
             onAssign={(targetId, enabled) =>
               actions.assign(service.id, targetId, enabled)
             }
             onRemove={() => actions.remove(service.id)}
+            onUndoRemove={() => actions.remove(service.id, true)}
             onRemoved={setUndo}
             onEdit={(service) => show({ type: "service", service })}
             onExport={showExport}

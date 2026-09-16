@@ -38,6 +38,18 @@
   font-size: 12px;
   padding: 6px 10px;
 }
+.refresh-warning {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 10px 20px;
+  flex-shrink: 0;
+  color: var(--warning);
+  background: var(--warning-bg);
+  border-bottom: 1px solid var(--warning-border);
+}
+.refresh-warning button { flex-shrink: 0; }
 /* 三栏网格为导航、服务列表和详情留出各自空间；窄窗口调整见 responsive.css。 */
 .columns {
   display: grid;

@@ -150,4 +150,11 @@ export interface Checks {
   issues: string[];
   executable: string | null;
   note: string;
+  /** 逐项静态结果；旧版本后端可只返回 issues。ok 也不表示已连接。 */
+  items?: {
+    code: string;
+    level: "ok" | "warning" | "error";
+    message: string;
+    hint?: string;
+  }[];
 }

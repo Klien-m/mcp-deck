@@ -26,6 +26,7 @@ It supports Codex, Claude Code, Cursor, Gemini CLI, OpenCode, GitHub Copilot CLI
 - **Multiple tools and targets** — Use 12 built-in tool adapters and add more than one configuration location for the same tool.
 - **Format conversion** — Convert shared fields between JSON, JSONC, and Codex TOML while preserving untouched content and tool-specific fields.
 - **Safe synchronization** — Preview full diffs, detect name conflicts and external edits, create backups, verify writes, and restore earlier configurations.
+- **Sync status and diagnostics** — Distinguish pending additions, updates, removals, read failures, and aligned files. Pending removals can be undone. Static checks explain command locations, permissions, working directories, variables, and entry scripts without starting servers.
 - **Import and export** — Import configuration text, export redacted templates by default, or explicitly export complete values.
 - **Local first** — The service library, credentials, and backups stay on your computer. MCP Deck neither starts MCP servers nor hosts OAuth flows.
 
@@ -76,6 +77,21 @@ The paths below are default candidates. A missing file only means that no config
 
 See the [adapter guide](docs/ADAPTERS.md) for complete paths, field mappings, and preservation rules.
 
+## Cross-platform Configuration Paths
+
+| Tool / directory | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| VS Code user configuration | `~/Library/Application Support/Code/User` | `%APPDATA%/Code/User` | `$XDG_CONFIG_HOME/Code/User`, falling back to `~/.config/Code/User` |
+| Cline / Roo extension configuration | `globalStorage` under the corresponding VS Code user directory | Same rule | Same rule |
+| Shared Cline configuration | `~/.cline/data/settings/cline_mcp_settings.json`; existing legacy files remain discoverable | Same path | Same path |
+| Claude Desktop | `~/Library/Application Support/Claude` | `%APPDATA%/Claude` | Discover existing files under `$XDG_CONFIG_HOME/Claude` (default `~/.config/Claude`); add a target manually when absent |
+| Codex | `$CODEX_HOME/config.toml`, falling back to `~/.codex/config.toml` | Same rule | Same rule |
+| OpenCode | `$XDG_CONFIG_HOME/opencode`, falling back to `~/.config/opencode` | Same rule, not APPDATA | Same rule |
+
+Windows falls back to `~/AppData/Roaming` when `APPDATA` is unset or invalid. Custom editor profiles, portable installs, and other hosts can still be added with an explicit path.
+
+Incorrect legacy defaults are corrected only when the old file is absent and no service or history references it. Existing files and custom paths are preserved; Windows/Linux targets still referring to an old macOS default show a review notice. With `MCP_DECK_HOME` set, tool directory overrides cannot redirect discovery into real user directories.
+
 ## How It Works
 
 MCP Deck is built with Tauri 2, React, and Rust. The frontend handles interaction and presentation, while the Rust engine performs configuration parsing, diff planning, backups, and file writes.
@@ -98,8 +114,8 @@ Only the target MCP node is changed during a write. JSONC keeps surrounding comm
 
 - All 12 configuration formats have automated contract coverage, but not every third-party client has completed end-to-end loading and authentication testing.
 - Validation does not start MCP processes, call business tools, perform network handshakes, or install `npx` / `uvx` services.
-- Saving an assignment means that the target configuration file was updated; it does not guarantee that the target tool has enabled, loaded, or connected to the service.
-- The central library and backups use `0700` directories and `0600` files, but they are not encrypted and are not stored in the system keychain.
+- Saving an assignment only updates the desired state in the library; target files change after Apply. Aligned files do not prove that a client loaded or connected to the service. If a write succeeds but the UI refresh fails, the successful result is preserved and only reads are retried.
+- On Unix systems, the central library and backups use `0700` directories and `0600` files, but they are not encrypted and are not stored in the system keychain.
 - MCP Deck does not resolve the final precedence of multiple configuration scopes. Project settings or organization policies may override user-level configuration.
 - Unsupported structures are left untouched and rejected from management to avoid lossy conversion.
 
@@ -121,10 +137,15 @@ Debug builds use `.local-dev/fixture-home` and `.local-dev/fixture-data` by defa
 npm run check
 npm run test:ui
 npm test
+node --test scripts/set-release-version.test.mjs
 npm run tauri build -- --bundles app
 ```
 
-Release builds use the real user directory by default and store application data under `~/Library/Application Support/com.mcpdeck.desktop/`. Set the absolute-path environment variables `MCP_DECK_HOME` and `MCP_DECK_DATA_DIR` to use isolated directories instead.
+Release builds use the real user directory by default and store application data in `com.mcpdeck.desktop` under the system user data directory (`~/Library/Application Support/` on macOS, `%APPDATA%/` on Windows, and `~/.local/share/` by default on Linux). Set the absolute-path environment variables `MCP_DECK_HOME` and `MCP_DECK_DATA_DIR` to use isolated directories instead.
+
+## Automated Regression
+
+The `Checks` workflow runs core tests, UI tests, release-version tests, Clippy, and frontend builds on Windows, Linux, and macOS for pull requests and pushes to `master` or `req/**`. Coverage includes static diagnostics, platform paths, migration guards, pending removals, display-only toggles, and recovery after committed writes followed by failed refreshes. Release builds also run core regression and the UI / version tests available in the tagged source before packaging; failures stop publishing.
 
 ## Releases
 

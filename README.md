@@ -26,6 +26,7 @@ MCP Deck 使用一个本地服务库统一管理多个 AI 工具的 MCP 配置�
 - **多工具、多目标** — 内置 12 种工具适配器，同一种工具可以添加多个配置位置。
 - **格式转换** — 在 JSON、JSONC 与 Codex TOML 之间转换公共字段，并保留未修改的配置内容与工具专属字段。
 - **安全同步** — 应用前展示完整差异，检测同名冲突和外部编辑；写入时自动备份、回读检查，并支持恢复。
+- **同步状态与诊断** — 区分待新增、更新、移除、读取失败与配置对齐；待移除项可以撤销。静态检查提供命令位置、权限、工作目录、变量及入口脚本提示，不启动服务。
 - **导入与导出** — 支持文本导入、默认脱敏导出，以及需要明确确认的完整导出。
 - **本地优先** — 服务库、凭据和备份只保存在本机；MCP Deck 不启动 MCP 服务，也不托管 OAuth。
 
@@ -76,6 +77,21 @@ macOS 最低支持 13.3（Ventura）。打开 DMG 后，将 `MCP Deck.app` 拖�
 
 完整的路径、字段差异与保留规则见[适配器说明](docs/ADAPTERS.md)。
 
+## 跨平台配置路径
+
+| 工具 / 目录 | macOS | Windows | Linux |
+| --- | --- | --- | --- |
+| VS Code 用户配置 | `~/Library/Application Support/Code/User` | `%APPDATA%/Code/User` | `$XDG_CONFIG_HOME/Code/User`，未设置时为 `~/.config/Code/User` |
+| Cline / Roo 扩展配置 | 对应 VS Code 用户目录的 `globalStorage` | 同左 | 同左 |
+| Cline 共享配置 | `~/.cline/data/settings/cline_mcp_settings.json`；已有旧配置仍可发现 | 同左 | 同左 |
+| Claude Desktop | `~/Library/Application Support/Claude` | `%APPDATA%/Claude` | 探测 `$XDG_CONFIG_HOME/Claude`（默认 `~/.config/Claude`）中的已有文件；没有文件时手动添加目标 |
+| Codex | `$CODEX_HOME/config.toml`，未设置时为 `~/.codex/config.toml` | 同左 | 同左 |
+| OpenCode | `$XDG_CONFIG_HOME/opencode`，未设置时为 `~/.config/opencode` | 同左，不改用 APPDATA | 同左 |
+
+Windows 未设置有效的 `APPDATA` 时回退到 `~/AppData/Roaming`。自定义编辑器 Profile、便携安装及其他宿主仍可手动指定配置文件。
+
+旧版错误默认路径仅在文件不存在、没有服务关联与历史引用时自动修正；已有配置或自定义路径保持不变。仍引用旧 macOS 默认路径的 Windows/Linux 目标会显示确认提示。指定 `MCP_DECK_HOME` 后，工具目录覆盖变量不会把配置发现引向真实用户目录。
+
 ## 工作原理
 
 MCP Deck 基于 Tauri 2、React 和 Rust。前端只负责交互与状态展示，所有配置解析、差异计算、备份和文件写入均由 Rust 引擎处理。
@@ -98,8 +114,8 @@ React UI
 
 - 12 种配置格式已通过自动化契约测试，但尚未逐一完成第三方客户端的加载与认证实测。
 - 配置检查不会启动 MCP 进程、调用业务工具或执行网络握手，也不会自动安装 `npx` / `uvx` 服务。
-- 保存分配只表示目标配置文件已更新，不代表目标工具已经启用、加载或联网。
-- 中央服务库与备份使用目录 `0700`、文件 `0600` 保护，但尚未加密，也未接入系统钥匙串。
+- 保存分配只更新服务库中的期望状态；点击“应用”后才写入目标文件。配置对齐不代表目标工具已经加载或联网。写入成功而界面刷新失败时，会保留成功结果并提示重新读取，不重复执行写操作。
+- 中央服务库与备份在 Unix 系统使用目录 `0700`、文件 `0600` 保护，但尚未加密，也未接入系统钥匙串。
 - 不解析多个配置作用域的最终合并优先级；项目配置或组织策略仍可能覆盖用户级配置。
 - 不支持的配置结构会保持原文件不变并拒绝接管，避免有损转换。
 
@@ -121,10 +137,15 @@ Debug 构建默认使用 `.local-dev/fixture-home` 和 `.local-dev/fixture-data`
 npm run check
 npm run test:ui
 npm test
+node --test scripts/set-release-version.test.mjs
 npm run tauri build -- --bundles app
 ```
 
-Release 构建默认读取真实用户目录，应用数据位于 `~/Library/Application Support/com.mcpdeck.desktop/`。也可以使用绝对路径环境变量 `MCP_DECK_HOME` 和 `MCP_DECK_DATA_DIR` 指向隔离目录。
+Release 构建默认读取真实用户目录，应用数据位于系统用户数据目录下的 `com.mcpdeck.desktop`（macOS 为 `~/Library/Application Support/`，Windows 为 `%APPDATA%/`，Linux 默认为 `~/.local/share/`）。也可以使用绝对路径环境变量 `MCP_DECK_HOME` 和 `MCP_DECK_DATA_DIR` 指向隔离目录。
+
+## 自动回归
+
+`Checks` 工作流在 PR、`master` 和 `req/**` 分支推送时，分别在 Windows、Linux、macOS 执行核心测试、UI 测试、版本脚本测试、Clippy 和前端构建。覆盖静态诊断、平台路径、迁移保护、待移除展示、纯显示切换以及写入成功后刷新失败的恢复。发布工作流也会在打包前执行核心回归与标签源码中已有的 UI / 版本测试，失败则停止发布。
 
 ## 发布
 

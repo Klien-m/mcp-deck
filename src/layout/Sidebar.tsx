@@ -63,7 +63,7 @@ export function Sidebar({
       >
         <RefreshCw size={17} />
         <span>待应用</span>
-        <small>{pendingCount} 项</small>
+        <small>{pendingCount} 个服务</small>
       </Button>
       <div className="nav-label target-label">
         <span>目标工具</span>
